@@ -333,5 +333,12 @@
   // lines for very dark pieces must stay visible on dark fills
   for (const g of CATALOG) if (!g.line) g.line = shade(g.color, -0.5);
 
-  window.KEKA = { CATALOG, svg, shade };
+  // A hanger on its own, for hanging a garment photograph beneath it (viewBox 200 x 90).
+  function hangerSvg(style, g) {
+    const kind = BOTTOM.has(g.type) ? 'bottom' : 'top';
+    const front = style === 'wire' && kind === 'top' ? HANGERS.guard() : '';
+    return `<svg class="hanger" viewBox="0 0 ${W} 90" aria-hidden="true">${HANGERS[style](kind)}${front}</svg>`;
+  }
+
+  window.KEKA = { CATALOG, svg, hangerSvg, shade };
 })();

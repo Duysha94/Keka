@@ -1,6 +1,6 @@
 /* KEKA concepts: shared engine (bag, films, rail physics, dialogs) and the three views. */
 (() => {
-  const { CATALOG, svg } = window.KEKA;
+  const { CATALOG, svg, hangerSvg } = window.KEKA;
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -11,6 +11,8 @@
   const sizesFor = g => (g.cat === 'Accessories' ? ['One size'] : SIZES);
   const byId = id => CATALOG.find(g => g.id === id);
   const lookPhoto = g => `media/photos/${g.look}.jpg`;
+  // a garment on its hanger: the hanger drawn, the garment a crop of the runway photograph
+  const garm = (g, style, extra = '') => `<span class="garm">${hangerSvg(style, g)}<img class="garm-img" src="media/rail/${g.id}.jpg" alt="" width="450" height="750" draggable="false">${extra}</span>`;
 
   // ---------------------------------------------------------------- bag
   const Bag = {
@@ -314,15 +316,13 @@
     const ledNo = $('.led-no', root);
     const sheet = Sheet($('#conveyor-sheet'));
     const bagSheet = Sheet($('#conveyor-bag'));
-    const cover = `<svg class="cover" viewBox="0 0 200 420" aria-hidden="true"><path d="M100,40 L22,70 L18,414 Q100,420 182,414 L178,70 Z" class="cover-film"/>
-      <path d="M44,90 L40,380" class="cover-sheen"/><path d="M54,100 L52,250" class="cover-sheen thin"/><path d="M160,96 L158,330" class="cover-sheen thin"/></svg>`;
     const rail = new Rail({
       viewport: $('.cv-rail', root), track: $('.cv-track', root),
       render(g, i) {
         const li = document.createElement('li');
         li.className = 'hang'; li.dataset.index = i;
-        li.innerHTML = `<button type="button" class="hang-btn" aria-label="Ticket ${g.ticket}: ${esc(g.name)}, ${money(g.price)}">
-          ${svg(g, { hanger: 'wire' })}${cover}
+        li.innerHTML = `<button type="button" class="hang-btn" aria-label="Ticket ${g.ticket}: ${esc(g.name)}, ${money(g.price)} sample price">
+          ${garm(g, 'wire', '<span class="bag" aria-hidden="true"></span>')}
           <span class="tag" aria-hidden="true"><b>No. ${g.ticket}</b><span>${esc(g.name)}</span></span></button>`;
         $('button', li).addEventListener('click', () => { rail.goTo(i); openPiece(g); });
         return li;
@@ -359,26 +359,31 @@
     function openPiece(g) {
       sheet.open(`
         <div class="slip">
-          <header class="slip-head"><span>Shop copy</span><span class="slip-no">No. ${g.ticket}</span></header>
           <div class="slip-grid">
-            <div class="slip-art">${svg(g, { hanger: 'wire', noGuard: true })}</div>
+            <figure class="slip-photo"><img src="${lookPhoto(g)}" alt="Runway look with the ${esc(g.name)}, ${g.collection}" width="800" height="1200"></figure>
             <div class="slip-info">
-              <p class="slip-coll">${g.collection}${g.collection === 'TRACE' ? ' · London Fashion Day S7' : ' · AW25-26'}</p>
+              <header class="slip-head"><span>Shop copy</span><span class="slip-no">No. ${g.ticket}</span></header>
               <h2 id="cv-title">${esc(g.name)}</h2>
-              <dl class="slip-fields"><div><dt>Fabric</dt><dd>${g.fabric}</dd></div><div><dt>Category</dt><dd>${g.cat}</dd></div><div><dt>Price</dt><dd>${money(g.price)} <small>sample</small></dd></div></dl>
+              <dl class="slip-fields">
+                <div><dt>Collection</dt><dd>${g.collection}${g.collection === 'TRACE' ? ', London Fashion Day S7' : ', AW25-26'}</dd></div>
+                <div><dt>Fabric</dt><dd>${g.fabric}</dd></div>
+                <div><dt>Category</dt><dd>${g.cat}</dd></div>
+                <div><dt>Price</dt><dd>${money(g.price)} <small>sample</small></dd></div></dl>
               <form class="slip-form" novalidate>${sizeField(g, 'cv-size')}
                 <button class="btn-ink" type="submit" data-autofocus>Add to bag</button>
               </form>
-              <figure class="slip-look"><img src="${lookPhoto(g)}" alt="Runway look with the ${esc(g.name)}" loading="lazy" width="800" height="1200"><figcaption>On the runway, ${g.collection}</figcaption></figure>
+              <p class="slip-status" role="status"></p>
+              <img class="stamp" src="media/stamp-in-bag.png" alt="" width="640" height="250">
             </div>
           </div>
-          <div class="stamp" aria-hidden="true">In bag</div>
-          <p class="slip-status" role="status"></p>
+          <div class="copy" hidden><span class="copy-no">No. ${g.ticket}</span><span class="copy-text">Customer copy. <b class="copy-size"></b> Keep it until the store opens.</span><button type="button" class="btn-ink js-open-bag">Open bag</button></div>
         </div>`);
       wireAdd(sheet.body(), g, 'cv-size', size => {
         const slip = $('.slip', sheet.body());
         slip.classList.remove('is-stamped'); void slip.offsetWidth; slip.classList.add('is-stamped');
         $('.slip-status', slip).textContent = `${g.name}, size ${size}, is in your bag.`;
+        const copy = $('.copy', slip); copy.hidden = false; $('.copy-size', copy).textContent = `Size ${size}.`;
+        $('.js-open-bag', copy).onclick = () => { sheet.close(); setTimeout(() => { renderBag(); bagSheet.open(); }, reduceMotion ? 0 : 280); };
       });
     }
 
@@ -415,10 +420,9 @@
         const li = document.createElement('li');
         li.className = 'hang'; li.dataset.index = i;
         const n = String(CATALOG.indexOf(g) + 1).padStart(2, '0');
-        li.innerHTML = `<button type="button" class="hang-btn" aria-label="Look ${n}: ${esc(g.name)}, ${money(g.price)}">
-          ${svg(g, { hanger: 'black' })}
-          <span class="lookcard" aria-hidden="true"><span class="lc-top">KEKA · ${g.collection}</span><b>Look ${n}</b><span class="lc-item">${esc(g.name)}</span></span>
-          <span class="polaroid" aria-hidden="true"><img src="${lookPhoto(g)}" alt="" loading="lazy" width="800" height="1200"></span></button>`;
+        li.innerHTML = `<button type="button" class="hang-btn" aria-label="Look ${n}: ${esc(g.name)}, ${money(g.price)} sample price">
+          ${garm(g, 'black')}
+          <span class="lookcard" aria-hidden="true"><b>Look ${n}</b><span class="lc-item">${esc(g.name)}</span><span class="lc-top">${g.collection}</span></span></button>`;
         $('button', li).addEventListener('click', () => { rail.goTo(i); openLook(g, n); });
         return li;
       },
@@ -446,10 +450,8 @@
         <div class="dress">
           <div class="dress-photo"><img src="${lookPhoto(g)}" alt="Runway look ${n} with the ${esc(g.name)}" width="800" height="1200"><span class="tape">Look ${n}</span></div>
           <div class="dress-info">
-            <p class="dress-meta">${g.collection} · ${g.cat}</p>
             <h2>${esc(g.name)}</h2>
-            <div class="dress-flat">${svg(g, { hanger: 'black' })}</div>
-            <ul class="dress-spec"><li><span>Fabric</span>${g.fabric}</li><li><span>Price</span>${money(g.price)} <small>sample</small></li></ul>
+            <ul class="dress-spec"><li><span>Collection</span>${g.collection}</li><li><span>Type</span>${g.cat}</li><li><span>Fabric</span>${g.fabric}</li><li><span>Price</span>${money(g.price)} <small>sample</small></li></ul>
             <form novalidate>${sizeField(g, 'bs-size')}
               <button class="btn-card" type="submit" data-autofocus>Add look ${n} to bag</button></form>
             <p class="dress-status" role="status"></p>
@@ -484,13 +486,13 @@
       render(g, i) {
         const li = document.createElement('li');
         li.className = 'hang'; li.dataset.index = i;
-        li.innerHTML = `<button type="button" class="hang-btn" aria-label="${esc(g.name)}, ${money(g.price)}">${svg(g, { hanger: 'wood' })}</button>`;
+        li.innerHTML = `<button type="button" class="hang-btn" aria-label="${esc(g.name)}, ${money(g.price)} sample price">${garm(g, 'wood')}</button>`;
         $('button', li).addEventListener('click', () => { if (rail.index() !== i) rail.goTo(i); openPiece(g); });
         return li;
       },
       onCenter(g, i) {
         $('.sr-cap-name', cap).textContent = g.name;
-        $('.sr-cap-meta', cap).textContent = `${g.collection} · ${g.fabric} · ${money(g.price)}`;
+        $('.sr-cap-meta', cap).textContent = `${g.collection} · ${g.fabric} · ${money(g.price)} sample price`;
         $('.sr-count', root).textContent = `${String(i + 1).padStart(2, '0')} / ${String(rail.items.length).padStart(2, '0')}`;
       },
     });
@@ -504,11 +506,11 @@
     function openPiece(g) {
       sheet.open(`
         <div class="pdp">
-          <div class="pdp-media"><div class="pdp-flat">${svg(g, { hanger: 'wood' })}</div><img src="${lookPhoto(g)}" alt="Runway look with the ${esc(g.name)}" width="800" height="1200" loading="lazy"></div>
+          <div class="pdp-media"><img src="${lookPhoto(g)}" alt="Runway look with the ${esc(g.name)}, ${g.collection}" width="800" height="1200"></div>
           <div class="pdp-info">
-            <p class="pdp-coll">${g.collection}</p>
             <h2>${esc(g.name)}</h2>
             <p class="pdp-price">${money(g.price)} <small>Sample price</small></p>
+            <p class="pdp-coll">${g.collection} collection</p>
             <form novalidate>${sizeField(g, 'sr-size')}<button class="btn-solid" type="submit" data-autofocus>Add to bag</button></form>
             <p class="pdp-status" role="status"></p>
             <details open><summary>Details</summary><p>${g.fabric}. Shown in the ${g.collection} collection${g.collection === 'TRACE' ? ' at London Fashion Day Season 7, May 2026' : ' at London Fashion Day Season 5, April 2025'}.</p></details>
@@ -518,7 +520,7 @@
       wireAdd(sheet.body(), g, 'sr-size', size => { $('.pdp-status', sheet.body()).textContent = `Added: ${g.name}, size ${size}.`; });
     }
     function renderBag() {
-      const lines = bagLines((g, it, i) => `<li class="sr-line"><div class="sr-line-art">${svg(g, { hanger: 'wood' })}</div><span><b>${esc(g.name)}</b><small>Size ${it.size}</small><small>${money(g.price)}</small></span><button type="button" class="link" data-remove="${i}">Remove</button></li>`);
+      const lines = bagLines((g, it, i) => `<li class="sr-line"><div class="sr-line-art"><img src="media/rail/${g.id}.jpg" alt="" width="450" height="750"></div><span><b>${esc(g.name)}</b><small>Size ${it.size}</small><small>${money(g.price)}</small></span><button type="button" class="link" data-remove="${i}">Remove</button></li>`);
       bagSheet.body().innerHTML = `<header class="bag-head"><h2>Bag</h2></header>${lines ? `<ul class="sr-lines">${lines}</ul><div class="bag-total"><span>Subtotal, sample prices</span><b>${money(Bag.total())}</b></div><button class="btn-solid" type="button" disabled>Checkout opens with the store</button>`
         : `<div class="bag-empty"><p>Your bag is empty.</p><button type="button" class="btn-line" data-close>Continue browsing</button></div>`}`;
     }

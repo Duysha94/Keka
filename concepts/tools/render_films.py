@@ -102,15 +102,13 @@ def conveyor_frame(photos, names, w, h, t, period_per, visible):
     """A strip of runway frames that runs and stops like a garment conveyor."""
     n = len(names)
     fw = w / visible
-    move, hold = 0.85, period_per - 0.85
+    move = 1.0
     k = math.floor(t / period_per)
     local = t - k * period_per
-    p = ease_in_out(local / move) if local < move else 1.0
+    # the motor pulls away briskly and the rail settles with an exponential ease-out, no overshoot
+    u = min(local / move, 1.0)
+    p = ease_out_expo(u) if u > 0.12 else ease_out_expo(0.12) * (u / 0.12) ** 2
     offset = (k + p) * fw  # pixels travelled
-    # settle wobble after each stop: a small damped overshoot
-    if local >= move:
-        s = local - move
-        offset += 6 * math.exp(-s * 6) * math.sin(s * 18) * (w / 1600)
     canvas = Image.new("RGB", (w, h), (18, 19, 22))
     seam = max(2, round(w / 640))
     first = math.floor(offset / fw) - 1
