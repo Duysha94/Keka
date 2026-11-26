@@ -1,0 +1,1814 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>KEKA Site Concepts</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Three concept prototypes for the new keka.design: brand site and store in one, with a full-screen film and an interactive wardrobe.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@300..700&family=Archivo:wdth,wght@62..125,400..900&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..700;1,6..96,400..700&family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,300..800&family=Courier+Prime:wght@400;700&family=Doto:wght@700;900&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* ---------------------------------------------------------------------------
+   Shared chrome. Each concept is a single committed look with its own tokens.
+   Layout: one route per concept (#conveyor, #backstage, #showroom), each a full
+   page: film hero -> wardrobe rail -> brand story -> shows -> newsletter.
+--------------------------------------------------------------------------- */
+:root {
+  --page: #e6e9ec; --page-ink: #15171c;
+  --switch-bg: #111214; --switch-ink: #f2f2f0; --switch-dim: #9a9ca1;
+  --ui: 'Albert Sans', 'Helvetica Neue', Arial, sans-serif;
+}
+html[data-concept="conveyor"] { --page: #e6e9ec; --page-ink: #15171c; }
+html[data-concept="backstage"] { --page: #3a1f2a; --page-ink: #efe9df; color-scheme: dark; }
+html[data-concept="showroom"] { --page: #ebeae6; --page-ink: #151515; }
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: auto; -webkit-text-size-adjust: 100%; }
+body { background: var(--page); color: var(--page-ink); margin: 0; font-family: var(--ui); overflow-x: hidden; }
+img, svg, video { display: block; max-width: 100%; }
+img { height: auto; }
+.logo { display: block; }
+.logo img { width: 100%; height: 100%; object-fit: contain; }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+.vh { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+.view { min-height: 100vh; overflow-x: clip; }
+.wrap { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+@media (min-width: 900px) { .wrap { padding-left: max(40px, env(safe-area-inset-left, 0px)); padding-right: max(40px, env(safe-area-inset-right, 0px)); } }
+
+/* concept switcher: prototype chrome, not part of any design */
+.switcher { position: fixed; left: 50%; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 60;
+  display: flex; align-items: center; gap: 2px; padding: 4px; border-radius: 999px; background: var(--switch-bg); color: var(--switch-ink);
+  box-shadow: 0 8px 24px rgba(0,0,0,.28); font: 500 12px/1 var(--ui); letter-spacing: .02em; max-width: calc(100% - 24px); }
+.switcher .sw-label { padding: 0 10px 0 12px; color: var(--switch-dim); white-space: nowrap; }
+.switcher a { color: var(--switch-ink); text-decoration: none; padding: 9px 12px; border-radius: 999px; white-space: nowrap; }
+.switcher a[aria-current="page"] { background: var(--switch-ink); color: var(--switch-bg); }
+.switcher a:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+@media (max-width: 520px) { .switcher .sw-label { display: none; } .switcher a { padding: 9px 10px; } }
+@media (min-width: 900px) { .switcher { left: max(16px, env(safe-area-inset-left, 0px)); transform: none; } }
+
+/* film hero (shared mechanics) */
+.hero { position: relative; height: 100vh; height: 100svh; min-height: 520px; overflow: hidden; isolation: isolate; }
+.hero video.film { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -2; }
+.film-toggle { position: absolute; z-index: 3; right: max(16px, env(safe-area-inset-right, 0px)); bottom: 72px; width: 40px; height: 40px;
+  display: grid; place-items: center; border: 1px solid rgba(255,255,255,.55); background: rgba(0,0,0,.25); color: #fff; border-radius: 50%; }
+.film-toggle svg { width: 16px; height: 16px; }
+.film-toggle .i-play { display: none; }
+.film-toggle[aria-pressed="true"] .i-play { display: block; }
+.film-toggle[aria-pressed="true"] .i-pause { display: none; }
+.film-toggle:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+@media (max-width: 640px) { .film-toggle { bottom: auto; top: calc(92px + env(safe-area-inset-top, 0px)); width: 36px; height: 36px; } }
+.switcher { transition: transform .35s cubic-bezier(.16,1,.3,1), opacity .35s; }
+.switcher.is-tucked { transform: translate(-50%, 160%); opacity: 0; }
+@media (min-width: 900px) { .switcher.is-tucked { transform: translateY(160%); } }
+
+/* rails (shared mechanics) */
+.rail { position: relative; touch-action: pan-y; user-select: none; -webkit-user-select: none; cursor: grab; outline: none; }
+.rail.is-dragging { cursor: grabbing; }
+.rail ul { list-style: none; margin: 0; padding: 0; position: relative; height: 100%; }
+.rail .hang { position: absolute; left: 0; top: 0; width: var(--rail-item); transform-origin: 50% 1.4%; will-change: transform; }
+.hang-btn { display: block; width: 100%; padding: 0; border: 0; background: none; position: relative; text-align: left; -webkit-tap-highlight-color: transparent; }
+.hang-btn .flat { width: 100%; height: auto; pointer-events: none; }
+.hang-btn:focus-visible { outline: none; }
+
+/* dialogs (shared mechanics) */
+dialog.sheet { padding: 0; border: 0; margin: 0 0 0 auto; height: 100%; max-height: 100%; width: min(720px, 100%); max-width: 100%; overflow: hidden; }
+dialog.sheet::backdrop { background: rgba(10, 10, 12, .45); }
+dialog.sheet[open] { animation: sheet-in .38s cubic-bezier(.16,1,.3,1); }
+dialog.sheet.is-closing { animation: sheet-out .26s cubic-bezier(.7,0,.84,0) forwards; }
+@keyframes sheet-in { from { transform: translateX(100%); } }
+@keyframes sheet-out { to { transform: translateX(100%); } }
+.sheet-inner { height: 100%; display: flex; flex-direction: column; }
+.sheet-close { position: absolute; z-index: 5; top: calc(12px + env(safe-area-inset-top, 0px)); right: max(12px, env(safe-area-inset-right, 0px)); width: 44px; height: 44px; display: grid; place-items: center; border: 0; background: none; }
+.sheet-close svg { width: 22px; height: 22px; }
+.sheet-body { flex: 1; overflow-y: auto; overscroll-behavior: contain; padding-top: env(safe-area-inset-top, 0px); padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 24px); }
+@media (max-width: 640px) {
+  dialog.sheet { width: 100%; }
+  dialog.sheet[open] { animation-name: sheet-up; }
+  dialog.sheet.is-closing { animation-name: sheet-down; }
+  @keyframes sheet-up { from { transform: translateY(100%); } }
+  @keyframes sheet-down { to { transform: translateY(100%); } }
+}
+.sizes { border: 0; padding: 0; margin: 0; }
+.size-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.size { position: relative; }
+.size input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.size span { display: grid; place-items: center; min-width: 48px; height: 44px; padding: 0 12px; }
+.size-error { margin: 8px 0 0; font-size: 14px; }
+.bag-empty p { margin: 0 0 10px; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+
+/* ===========================================================================
+   A · CONVEYOR — garment-care counter
+   ========================================================================= */
+#view-conveyor, #conveyor-sheet, #conveyor-bag {
+  /* layout: film -> claim ticket -> steel conveyor with LED counter -> woven-label story -> pick-up log -> pink ticket footer */
+  --frost: #e6e9ec; --frost-2: #d3d9de; --steel: #8b949c; --steel-dk: #59626a;
+  --ink: #15171c; --ink-2: #474d56;
+  --pink: #f2b6c2; --pink-ink: #51202b; --canary: #f0dd84; --blue: #c4d8ec; --stamp: #c9372a;
+  --led-bg: #0f1013; --led: #ff6b3d; --led-warn: #ffc23d;
+  --sign: 'Archivo', 'Arial Narrow', Arial, sans-serif;
+  --typed: 'Courier Prime', 'Courier New', Courier, monospace;
+  --dots: 'Doto', 'Courier New', monospace;
+  --hanger-wire: #7f888f; --guard-paper: #f7f3ee; --guard-edge: #cfc6bb; --guard-ink: #1c1f26; --font-sign: 'Archivo', sans-serif;
+  color: var(--ink); font-family: var(--sign); font-stretch: 100%;
+}
+#view-conveyor ::selection { background: var(--pink); color: var(--ink); }
+#view-conveyor :focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+.cv-top { position: fixed; top: 0; left: 0; right: 0; z-index: 40; display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding-top: calc(14px + env(safe-area-inset-top, 0px)); padding-bottom: 14px; color: #fff; transition: background .3s, color .3s, box-shadow .3s; }
+#view-conveyor.is-past .cv-top { background: var(--frost); color: var(--ink); box-shadow: 0 1px 0 var(--frost-2); }
+.cv-top .logo { width: 58px; height: 58px; }
+.cv-top .logo img { width: 100%; height: 100%; }
+.cv-top .logo .dk { display: none; }
+#view-conveyor.is-past .cv-top .logo .lt { display: none; }
+#view-conveyor.is-past .cv-top .logo .dk { display: block; }
+.cv-nav { display: flex; gap: 4px; }
+.cv-nav button { background: none; border: 0; padding: 10px 12px; font: 600 12px/1 var(--sign); font-stretch: 118%; text-transform: uppercase; letter-spacing: .06em; }
+.cv-nav button:hover { text-decoration: underline; text-underline-offset: 4px; }
+.cv-nav .count { display: inline-grid; place-items: center; min-width: 20px; height: 20px; margin-left: 4px; border-radius: 10px; background: var(--pink); color: var(--ink); font-size: 11px; }
+.cv-hero .hero-shade { position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(10,12,16,.45) 0, rgba(10,12,16,0) 22%, rgba(10,12,16,0) 55%, rgba(10,12,16,.5) 100%); }
+.claim { position: absolute; z-index: 2; left: max(16px, env(safe-area-inset-left, 0px)); bottom: 72px; width: min(470px, calc(100% - 32px));
+  background: var(--pink); color: var(--ink); padding: 20px 22px 18px 30px; transform: rotate(-1.2deg); transform-origin: 0 100%;
+  box-shadow: 0 18px 40px -12px rgba(0,0,0,.45);
+  -webkit-mask: radial-gradient(circle at 0 9px, transparent 4.5px, #000 5px) 0 0 / 100% 18px repeat-y; mask: radial-gradient(circle at 0 9px, transparent 4.5px, #000 5px) 0 0 / 100% 18px repeat-y;
+  animation: claim-in .9s .25s cubic-bezier(.16,1,.3,1) both; }
+@keyframes claim-in { from { transform: translateY(24px) rotate(-4deg); opacity: 0; } }
+.claim-top { display: flex; justify-content: space-between; font: 700 12px/1 var(--typed); letter-spacing: .04em; text-transform: uppercase; color: var(--pink-ink); border-bottom: 1px dashed rgba(81,32,43,.45); padding-bottom: 10px; }
+.claim h1 { margin: 14px 0 10px; font: 800 clamp(28px, 3.6vw, 46px)/.94 var(--sign); font-stretch: 122%; text-transform: uppercase; letter-spacing: -.01em; text-wrap: balance; }
+.claim p { margin: 0 0 16px; font: 400 15px/1.45 var(--typed); color: var(--pink-ink); max-width: 38ch; }
+.claim-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.claim-note { font: 700 12px/1.2 var(--typed); text-transform: uppercase; color: var(--pink-ink); }
+.btn-ink { display: inline-flex; align-items: center; gap: 10px; border: 0; background: var(--ink); color: #fff; padding: 14px 18px; font: 700 13px/1 var(--sign); font-stretch: 118%; text-transform: uppercase; letter-spacing: .05em; }
+.btn-ink svg { width: 16px; height: 16px; }
+.btn-ink:hover { background: #000; }
+.btn-ink:disabled { background: var(--ink-2); color: #d8dbe0; cursor: not-allowed; }
+.btn-line { border: 1.5px solid currentColor; background: none; padding: 12px 16px; font: 700 12px/1 var(--sign); text-transform: uppercase; letter-spacing: .06em; }
+.cv-credit { position: absolute; z-index: 2; right: max(16px, env(safe-area-inset-right, 0px)); bottom: 124px; color: rgba(255,255,255,.85); font: 400 12px/1.3 var(--typed); text-align: right; }
+@media (max-width: 900px) { .cv-credit { display: none; } }
+
+.cv-shop { padding-block: 96px 48px; background: var(--frost); }
+.cv-shop-head { display: grid; grid-template-columns: 1fr; gap: 12px; align-items: end; margin-bottom: 28px; }
+.cv-shop-head h2 { margin: 0; font: 900 clamp(56px, 10vw, 148px)/.82 var(--sign); font-stretch: 125%; text-transform: uppercase; letter-spacing: -.03em; }
+.cv-shop-head p { margin: 0; max-width: 46ch; font: 400 16px/1.5 var(--typed); color: var(--ink-2); }
+@media (min-width: 900px) { .cv-shop-head { grid-template-columns: 1fr auto; } .cv-shop-head p { text-align: right; } }
+.cv-filters { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 20px; scrollbar-width: none; }
+.cv-filters .chip { flex: none; border: 0; background: var(--frost-2); padding: 10px 14px 10px 18px; font: 700 12px/1 var(--typed); text-transform: uppercase; letter-spacing: .04em; color: var(--ink-2);
+  -webkit-mask: radial-gradient(circle at 0 50%, transparent 4px, #000 4.5px); mask: radial-gradient(circle at 0 50%, transparent 4px, #000 4.5px); }
+.cv-filters .chip[aria-pressed="true"] { background: var(--blue); color: var(--ink); }
+.cv-rail { --rail-item: 200px; --rail-spacing: 236px; height: 470px; overflow: hidden; margin-inline: calc(-1 * max(16px, env(safe-area-inset-left, 0px))); }
+@media (min-width: 900px) { .cv-rail { margin-inline: calc(-1 * max(40px, env(safe-area-inset-left, 0px))); } }
+@media (max-width: 640px) { .cv-rail { --rail-item: 150px; --rail-spacing: 172px; height: 360px; } }
+.cv-bar { position: absolute; left: 0; right: 0; top: calc(var(--rail-item) * .034); height: 7px; z-index: 0;
+  background: linear-gradient(180deg, #c9cfd4 0, #9aa3aa 40%, #6c757c 100%); box-shadow: 0 2px 3px rgba(0,0,0,.2); }
+.cv-bar::before, .cv-bar::after { content: ""; position: absolute; top: -8px; width: 26px; height: 22px; background: var(--steel-dk); }
+.cv-bar::before { left: 0; } .cv-bar::after { right: 0; }
+.cv-track { z-index: 1; }
+.cv-rail .hang-btn { filter: drop-shadow(0 10px 10px rgba(30,35,40,.16)); }
+.cv-rail .cover { position: absolute; inset: 0; width: 100%; height: auto; pointer-events: none; transition: transform .5s cubic-bezier(.16,1,.3,1); }
+.cover-film { fill: rgba(240, 244, 248, .34); stroke: rgba(255,255,255,.85); stroke-width: 1.2; }
+.cover-sheen { stroke: rgba(255,255,255,.6); stroke-width: 4; stroke-linecap: round; fill: none; }
+.cover-sheen.thin { stroke-width: 1.4; }
+.cv-rail .hang-btn:hover .cover, .cv-rail .hang-btn:focus-visible .cover { transform: translateY(-18%); }
+.cv-rail .tag { position: absolute; right: 2%; bottom: 7%; width: 44%; padding: 7px 8px 8px; background: var(--blue); transform: rotate(3deg); box-shadow: 0 3px 6px rgba(0,0,0,.12);
+  font: 400 11px/1.2 var(--typed); color: var(--ink); }
+.cv-rail .tag b { display: block; font-size: 13px; margin-bottom: 2px; }
+.cv-rail .tag span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.cv-rail .hang.is-center .tag { background: var(--canary); }
+.cv-rail .hang-btn:focus-visible .tag { outline: 2px solid var(--ink); outline-offset: 2px; }
+@media (max-width: 640px) { .cv-rail .tag { font-size: 10px; padding: 5px 6px; } .cv-rail .tag b { font-size: 11px; } }
+.cv-mark { position: absolute; left: 50%; bottom: -2px; transform: translateX(-50%); width: 0; height: 0; border-left: 9px solid transparent; border-right: 9px solid transparent; border-bottom: 12px solid var(--ink); z-index: 2; }
+.cv-counter { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: stretch; margin-top: 18px; }
+.motor { display: grid; place-items: center; grid-auto-flow: column; gap: 8px; border: 0; background: var(--ink); color: #fff; padding: 0 16px; min-height: 64px;
+  font: 700 12px/1 var(--sign); font-stretch: 118%; text-transform: uppercase; letter-spacing: .06em; touch-action: none; }
+.motor svg { width: 18px; height: 18px; }
+.motor:active { background: #000; transform: translateY(1px); }
+.led { background: var(--led-bg); color: var(--led); padding: 10px 16px; display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 16px; align-items: center; min-width: 0; }
+.led-label { grid-column: 1 / -1; font: 700 11px/1 var(--typed); color: #8a8f96; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 6px; }
+.led-no { font: 900 34px/1 var(--dots); letter-spacing: .04em; }
+.led-text { font: 700 18px/1.1 var(--dots); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-transform: uppercase; min-width: 0; }
+.led[data-state="error"] { color: var(--led-warn); }
+.led[data-state="error"] .led-text { white-space: normal; font-size: 15px; }
+.cv-counter-2 { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.cv-call { display: flex; align-items: stretch; flex: 1 1 260px; background: #fff; }
+.cv-call label { display: grid; place-items: center; padding: 0 12px; white-space: nowrap; font: 700 12px/1 var(--typed); text-transform: uppercase; color: var(--ink-2); }
+.cv-call input { width: 100%; min-width: 0; border: 0; border-left: 1px dashed var(--steel); padding: 0 12px; font: 700 22px/1 var(--typed); background: none; min-height: 52px; }
+.cv-call input::placeholder { color: #b5bbc1; }
+.cv-call button { border: 0; background: var(--blue); padding: 0 18px; font: 700 12px/1 var(--sign); text-transform: uppercase; letter-spacing: .06em; }
+.cv-collect { flex: 1 1 220px; justify-content: center; min-height: 52px; }
+@media (max-width: 640px) {
+  .cv-counter { grid-template-columns: 1fr 1fr; }
+  .cv-counter .led { grid-column: 1 / -1; grid-row: 1; }
+  .motor { min-height: 52px; }
+  .led-no { font-size: 28px; } .led-text { font-size: 15px; }
+}
+.cv-hint { margin: 14px 0 0; font: 400 13px/1.4 var(--typed); color: var(--ink-2); }
+
+.cv-about { padding-block: 96px; background: var(--ink); color: #f1f2f4; }
+.cv-about :focus-visible { outline-color: #fff; }
+.cv-about h2 { margin: 0 0 40px; font: 900 clamp(44px, 7.4vw, 112px)/.86 var(--sign); font-stretch: 125%; text-transform: uppercase; letter-spacing: -.02em; text-wrap: balance; }
+.cv-about-grid { display: grid; gap: 40px; }
+@media (min-width: 960px) { .cv-about-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 64px; } }
+.cv-about-copy p { margin: 0 0 18px; font: 400 18px/1.55 var(--typed); max-width: 56ch; color: #d6d9de; }
+.cv-about-copy .lead { font: 700 22px/1.4 var(--typed); color: #fff; }
+.labels { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.label { position: relative; background: #f4f1ec; color: var(--ink); padding: 18px 26px; display: grid; grid-template-columns: 9.5rem 1fr; gap: 18px; align-items: baseline; }
+.label::before, .label::after { content: ""; position: absolute; top: 6px; bottom: 6px; width: 0; border-left: 1.5px dashed #9b948a; }
+.label::before { left: 9px; } .label::after { right: 9px; }
+.label b { font: 800 15px/1 var(--sign); font-stretch: 125%; text-transform: uppercase; letter-spacing: .06em; }
+.label span { font: 400 15px/1.45 var(--typed); }
+@media (max-width: 520px) { .label { grid-template-columns: 1fr; gap: 6px; } }
+.cv-quote { margin: 64px 0 0; display: grid; gap: 28px; align-items: center; }
+@media (min-width: 900px) { .cv-quote { grid-template-columns: 300px 1fr; gap: 56px; } }
+.cv-quote .bag-photo { position: relative; width: min(300px, 70%); }
+.cv-quote .bag-photo img { width: 100%; aspect-ratio: 2 / 3; object-fit: cover; }
+.cv-quote .bag-photo::after { content: ""; position: absolute; inset: -10px; background: linear-gradient(105deg, rgba(255,255,255,.16), rgba(255,255,255,.04) 40%, rgba(255,255,255,.14) 70%, rgba(255,255,255,.02)); border: 1px solid rgba(255,255,255,.45); }
+.cv-quote blockquote { margin: 0; font: 700 clamp(24px, 3vw, 38px)/1.15 var(--sign); font-stretch: 108%; text-wrap: balance; }
+.cv-quote figcaption { margin-top: 18px; font: 400 15px/1.4 var(--typed); color: #b9bec6; }
+
+.cv-log { padding-block: 96px; background: var(--frost); }
+.cv-log h2 { margin: 0 0 28px; font: 900 clamp(40px, 6vw, 84px)/.9 var(--sign); font-stretch: 125%; text-transform: uppercase; letter-spacing: -.02em; }
+.roll { list-style: none; margin: 0; padding: 0; background: #fff; max-width: 980px; box-shadow: 0 1px 0 var(--frost-2); }
+.roll li { display: grid; grid-template-columns: 7.5rem 1fr auto; gap: 16px; align-items: center; padding: 16px 20px; border-bottom: 1px dashed var(--steel); }
+.roll li:last-child { border-bottom: 0; }
+.roll time { font: 700 14px/1.2 var(--typed); }
+.roll .ev { font: 700 17px/1.25 var(--sign); font-stretch: 104%; }
+.roll .ev small { display: block; font: 400 14px/1.4 var(--typed); color: var(--ink-2); margin-top: 3px; }
+.roll img { width: 56px; height: 72px; object-fit: cover; }
+.roll a { color: inherit; }
+@media (max-width: 600px) { .roll li { grid-template-columns: 1fr auto; } .roll time { grid-column: 1 / -1; } }
+
+.cv-foot { background: var(--pink); color: var(--ink); padding-block: 72px calc(110px + env(safe-area-inset-bottom, 0px)); }
+.cv-foot h2 { margin: 0 0 12px; font: 900 clamp(56px, 12vw, 190px)/.8 var(--sign); font-stretch: 125%; text-transform: uppercase; letter-spacing: -.03em; }
+.cv-foot-grid { display: grid; gap: 32px; margin-top: 32px; }
+@media (min-width: 900px) { .cv-foot-grid { grid-template-columns: 1.2fr 1fr; } }
+.cv-foot p { margin: 0 0 16px; font: 400 16px/1.5 var(--typed); max-width: 48ch; color: var(--pink-ink); }
+.newsletter .nl-row { display: flex; gap: 0; max-width: 520px; }
+.newsletter input[type=email] { flex: 1; min-width: 0; border: 0; border-bottom: 2px solid var(--ink); background: transparent; padding: 14px 4px; font: 700 18px/1 var(--typed); }
+.newsletter input[type=email]::placeholder { color: rgba(21,23,28,.5); }
+.newsletter .agree { display: flex; gap: 10px; align-items: flex-start; margin-top: 14px; font: 400 14px/1.4 var(--typed); color: var(--pink-ink); max-width: 52ch; }
+.newsletter .agree input { width: 18px; height: 18px; margin: 1px 0 0; accent-color: var(--ink); }
+.nl-status { min-height: 1.4em; margin: 10px 0 0; font: 400 14px/1.4 var(--typed); }
+.nl-status[data-state="error"] { color: var(--stamp); }
+.cv-links { display: grid; gap: 8px; align-content: start; font: 700 14px/1.3 var(--typed); }
+.cv-links a { color: var(--ink); }
+.cv-proto { margin-top: 40px; padding-top: 16px; border-top: 1px dashed rgba(81,32,43,.5); font: 400 13px/1.5 var(--typed); color: var(--pink-ink); max-width: 80ch; }
+
+/* conveyor dialogs */
+#conveyor-sheet { background: var(--canary); color: var(--ink); width: min(820px, 100%); }
+#conveyor-bag { background: var(--pink); color: var(--ink); width: min(520px, 100%); }
+#conveyor-sheet :focus-visible, #conveyor-bag :focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+.slip { position: relative; padding: 24px max(20px, env(safe-area-inset-left, 0px)) 24px max(20px, env(safe-area-inset-left, 0px)); }
+.slip-head { display: flex; gap: 24px; font: 700 12px/1 var(--typed); text-transform: uppercase; letter-spacing: .06em; padding: 10px 56px 14px 0; border-bottom: 1px dashed rgba(21,23,28,.4); }
+.slip-grid { display: grid; gap: 24px; margin-top: 20px; }
+@media (min-width: 700px) { .slip-grid { grid-template-columns: 280px 1fr; } }
+.slip-art { background: rgba(255,255,255,.35); padding: 12px; }
+.slip-art .flat { width: 100%; max-width: 260px; margin: 0 auto; }
+.slip-coll { margin: 0 0 8px; font: 700 12px/1.2 var(--typed); text-transform: uppercase; letter-spacing: .06em; }
+.slip h2 { margin: 0 0 16px; font: 900 clamp(28px, 4vw, 40px)/.95 var(--sign); font-stretch: 120%; text-transform: uppercase; text-wrap: balance; }
+.slip-fields { margin: 0 0 20px; display: grid; gap: 0; border-top: 1px solid rgba(21,23,28,.25); }
+.slip-fields div { display: grid; grid-template-columns: 8rem 1fr; padding: 9px 0; border-bottom: 1px solid rgba(21,23,28,.25); font: 400 15px/1.3 var(--typed); }
+.slip-fields dt { text-transform: uppercase; font-size: 12px; letter-spacing: .06em; align-self: center; }
+.slip-fields dd { margin: 0; font-weight: 700; }
+.slip-fields small { font-weight: 400; opacity: .7; }
+.slip .sizes legend { font: 700 12px/1 var(--typed); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; }
+.slip .size span { border: 1.5px solid var(--ink); font: 700 14px/1 var(--typed); }
+.slip .size input:checked + span { background: var(--ink); color: var(--canary); }
+.slip .size input:focus-visible + span { outline: 2px solid var(--ink); outline-offset: 2px; }
+.slip .size-error { color: var(--stamp); font-family: var(--typed); font-weight: 700; }
+.slip-form { display: grid; gap: 16px; }
+.slip-form .btn-ink { justify-content: center; min-height: 52px; }
+.slip-look { margin: 24px 0 0; display: grid; grid-template-columns: 88px 1fr; gap: 12px; align-items: end; }
+.slip-look img { width: 88px; aspect-ratio: 2/3; object-fit: cover; }
+.slip-look figcaption { font: 400 13px/1.3 var(--typed); }
+.stamp { position: absolute; left: 12%; top: 300px; padding: 8px 16px; border: 4px solid var(--stamp); color: var(--stamp); font: 900 38px/1 var(--sign); font-stretch: 125%; text-transform: uppercase; letter-spacing: .04em;
+  transform: rotate(-14deg); opacity: 0; pointer-events: none; mix-blend-mode: multiply; border-radius: 4px; }
+.slip.is-stamped .stamp { animation: stamp .36s cubic-bezier(.16,1,.3,1) forwards; }
+@keyframes stamp { 0% { opacity: 0; transform: rotate(-14deg) scale(1.9); } 40% { opacity: .95; } 100% { opacity: .9; transform: rotate(-14deg) scale(1); } }
+.slip-status { margin: 16px 0 0; font: 700 14px/1.4 var(--typed); min-height: 1.4em; }
+#conveyor-bag .sheet-body { padding-inline: max(20px, env(safe-area-inset-left, 0px)); }
+.bag-head { padding: 22px 56px 16px 0; }
+.bag-head h2 { margin: 0 0 6px; font: 900 34px/.95 var(--sign); font-stretch: 125%; text-transform: uppercase; }
+.bag-head p { margin: 0; font: 400 14px/1.4 var(--typed); }
+#conveyor-bag .bag-head p, #conveyor-bag .bag-empty { color: var(--pink-ink); font-family: var(--typed); }
+.stubs { list-style: none; margin: 0 0 16px; padding: 0; }
+.stub { display: grid; grid-template-columns: 4.5rem 1fr auto 44px; gap: 10px; align-items: center; padding: 14px 0; border-top: 1.5px dashed rgba(81,32,43,.5); font-family: var(--typed); }
+.stub-no { font-weight: 700; font-size: 14px; }
+.stub-name { font: 700 15px/1.25 var(--sign); }
+.stub-name small { display: block; font: 400 13px/1.3 var(--typed); margin-top: 2px; }
+.stub-price { font-weight: 700; font-variant-numeric: tabular-nums; }
+.stub-x { width: 44px; height: 44px; border: 0; background: none; display: grid; place-items: center; }
+.stub-x svg { width: 18px; height: 18px; }
+.bag-total { display: flex; justify-content: space-between; align-items: baseline; padding: 16px 0; border-top: 2px solid var(--ink); margin-bottom: 16px; font-family: var(--typed); }
+.bag-total b { font-size: 22px; font-variant-numeric: tabular-nums; }
+#conveyor-bag .btn-ink { width: 100%; justify-content: center; min-height: 52px; }
+#conveyor-sheet .sheet-close, #conveyor-bag .sheet-close { color: var(--ink); }
+
+/* ===========================================================================
+   B · BACKSTAGE — the dressers' rail before the show
+   ========================================================================= */
+#view-backstage, #backstage-sheet, #backstage-bag {
+  /* layout: flash-cut triptych film -> taped headline -> rail of looks beside the running order -> call sheet -> newsletter */
+  --plum: #3a1f2a; --plum-2: #4b2834; --plum-deep: #22121a; --plum-line: #6a4453;
+  --chalk: #efe9df; --rose: #d2b3bd; --card: #f6f4ef; --tape: #d8ccb6; --tape-ink: #3d3326; --ink: #1a1214;
+  --hanger-hook: #161214; --hanger-body: #110d0f;
+  --cond: 'Bricolage Grotesque', 'Arial Narrow', Arial, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+  color: var(--chalk); font-family: var(--cond);
+}
+#view-backstage ::selection { background: var(--tape); color: var(--ink); }
+#view-backstage :focus-visible, #backstage-sheet :focus-visible, #backstage-bag :focus-visible { outline: 2px solid var(--tape); outline-offset: 3px; }
+.bs-top { position: fixed; top: 0; left: 0; right: 0; z-index: 40; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding-top: calc(12px + env(safe-area-inset-top, 0px)); padding-bottom: 12px; transition: background .3s; }
+#view-backstage.is-past .bs-top { background: var(--plum-deep); }
+.bs-top .logo { width: 54px; height: 54px; }
+.bs-nav { display: flex; gap: 2px; }
+.bs-nav button { border: 0; background: none; padding: 10px 12px; font: 600 15px/1 var(--cond); font-stretch: 80%; text-transform: uppercase; letter-spacing: .04em; }
+.bs-nav .count { font-family: var(--mono); font-size: 12px; margin-left: 4px; color: var(--tape); }
+.bs-hero .hero-shade { position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(20,10,14,.5) 0, rgba(20,10,14,0) 25%, rgba(20,10,14,.1) 50%, rgba(20,10,14,.82) 100%); }
+.bs-hero-copy { position: absolute; z-index: 2; left: 0; right: 0; bottom: 72px; }
+.tape { display: inline-block; background: var(--tape); color: var(--tape-ink); padding: 7px 14px 6px; font: 600 12px/1 var(--mono); text-transform: uppercase; letter-spacing: .05em;
+  box-shadow: 0 2px 6px rgba(0,0,0,.25); }
+.bs-hero-copy .tape { transform: rotate(-2deg); }
+.bs-hero h1 { margin: 14px 0 10px; font: 800 clamp(72px, 15vw, 232px)/.8 var(--cond); font-stretch: 75%; font-variation-settings: "opsz" 96; text-transform: uppercase; letter-spacing: -.02em; }
+.bs-hero p { margin: 0 0 22px; font: 400 clamp(17px, 1.6vw, 22px)/1.35 var(--cond); max-width: 34ch; color: var(--chalk); }
+.btn-card { display: inline-flex; align-items: center; gap: 10px; border: 0; background: var(--card); color: var(--ink); padding: 15px 20px; font: 700 16px/1 var(--cond); font-stretch: 80%; text-transform: uppercase; letter-spacing: .03em; }
+.btn-card svg { width: 16px; height: 16px; }
+.btn-card:hover { background: #fff; }
+.btn-card:disabled { opacity: .55; cursor: not-allowed; }
+#view-backstage .btn-line, #backstage-bag .btn-line { font-family: var(--cond); font-stretch: 80%; font-size: 15px; }
+
+.bs-show { padding-block: 96px 56px; background: var(--plum); }
+.bs-show-head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 16px 32px; margin-bottom: 24px; }
+.bs-show-head h2 { margin: 0; font: 800 clamp(56px, 9vw, 136px)/.82 var(--cond); font-stretch: 75%; text-transform: uppercase; }
+.bs-show-head p { margin: 0; max-width: 42ch; font: 400 17px/1.45 var(--cond); color: var(--rose); }
+.bs-filters { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin-bottom: 18px; }
+.bs-filters .chip { flex: none; border: 1px solid var(--plum-line); background: none; padding: 9px 14px; font: 600 14px/1 var(--cond); font-stretch: 85%; text-transform: uppercase; letter-spacing: .03em; color: var(--rose); }
+.bs-filters .chip[aria-pressed="true"] { background: var(--tape); color: var(--tape-ink); border-color: var(--tape); }
+.bs-stage { display: grid; gap: 24px; }
+@media (min-width: 1100px) { .bs-stage { grid-template-columns: minmax(0, 1fr) 320px; } }
+.bs-rail { --rail-item: 200px; --rail-spacing: 250px; height: 500px; overflow: hidden; background: linear-gradient(180deg, var(--plum-deep) 0, var(--plum-2) 100%); }
+@media (max-width: 640px) { .bs-rail { --rail-item: 156px; --rail-spacing: 190px; height: 400px; } }
+.bs-rail::before { content: ""; position: absolute; left: 0; right: 0; top: calc(var(--rail-item) * .034 + 6px); height: 5px; background: #0c0809; box-shadow: 0 1px 0 rgba(255,255,255,.08); }
+.bs-rail .hang { top: 6px; }
+.bs-rail .hang-btn { filter: drop-shadow(0 14px 14px rgba(0,0,0,.35)); }
+.lookcard { position: absolute; top: 7%; left: 58%; width: 44%; background: var(--card); color: var(--ink); padding: 6px 7px 7px; transform: rotate(5deg); transform-origin: 20% 0; box-shadow: 0 4px 8px rgba(0,0,0,.3);
+  display: grid; gap: 1px; transition: transform .5s cubic-bezier(.16,1,.3,1); }
+.lookcard::before { content: ""; position: absolute; left: 8px; top: -18px; height: 18px; border-left: 1px solid rgba(239,233,223,.6); }
+.lc-top { font: 600 8px/1.2 var(--mono); letter-spacing: .04em; text-transform: uppercase; color: #6d5d62; }
+.lookcard b { font: 800 22px/.9 var(--cond); font-stretch: 75%; text-transform: uppercase; }
+.lc-item { font: 500 10px/1.15 var(--cond); }
+.polaroid { position: absolute; left: 2%; bottom: 10%; width: 38%; background: #fbfaf7; padding: 4px 4px 14px; transform: rotate(-6deg); box-shadow: 0 6px 12px rgba(0,0,0,.35); transition: transform .5s cubic-bezier(.16,1,.3,1); }
+.polaroid img { width: 100%; aspect-ratio: 4/5; object-fit: cover; }
+.bs-rail .hang-btn:hover .polaroid, .bs-rail .hang-btn:focus-visible .polaroid { transform: rotate(-2deg) translateY(-8px) scale(1.12); }
+.bs-rail .hang-btn:hover .lookcard, .bs-rail .hang-btn:focus-visible .lookcard { transform: rotate(-3deg); }
+.bs-rail .hang.is-center .lookcard { background: var(--tape); }
+.bs-rail .hang-btn:focus-visible .lookcard { outline: 2px solid var(--tape); outline-offset: 2px; }
+.bs-controls { display: flex; gap: 8px; margin-top: 10px; }
+.bs-controls button { width: 52px; height: 52px; display: grid; place-items: center; border: 1px solid var(--plum-line); background: var(--plum-deep); }
+.bs-controls button svg { width: 20px; height: 20px; }
+.bs-controls p { margin: 0 0 0 8px; align-self: center; font: 400 14px/1.35 var(--cond); color: var(--rose); }
+.sheet-paper { background: var(--card); color: var(--ink); padding: 20px 18px 14px; position: relative; box-shadow: 0 20px 40px -18px rgba(0,0,0,.6); }
+.sheet-paper::before, .sheet-paper::after { content: ""; position: absolute; top: -10px; width: 70px; height: 22px; background: var(--tape); opacity: .92; }
+.sheet-paper::before { left: 18px; transform: rotate(-6deg); } .sheet-paper::after { right: 18px; transform: rotate(5deg); }
+.sheet-paper h3 { margin: 0 0 4px; font: 800 26px/1 var(--cond); font-stretch: 75%; text-transform: uppercase; }
+.sheet-paper .ro-sub { margin: 0 0 12px; font: 400 12px/1.3 var(--mono); color: #6d5d62; }
+.bs-order { list-style: none; margin: 0; padding: 0; max-height: 420px; overflow-y: auto; border-top: 1px solid #1a1214; }
+.bs-order button { width: 100%; display: grid; grid-template-columns: 5.6rem 2rem 1fr; gap: 8px; align-items: baseline; text-align: left; border: 0; border-bottom: 1px solid #d8d2c8; background: none; padding: 10px 4px; color: var(--ink); }
+.bs-order .ro-t, .bs-order .ro-n { font: 400 12px/1.2 var(--mono); font-variant-numeric: tabular-nums; }
+.bs-order .ro-n { font-weight: 600; }
+.bs-order .ro-name { font: 600 15px/1.2 var(--cond); }
+.bs-order li[aria-current] button { background: var(--ink); color: var(--card); }
+.bs-order button:hover { background: #ebe6dc; }
+.bs-order button:focus-visible { outline: 2px solid var(--plum); outline-offset: -2px; }
+@media (max-width: 1099px) { .bs-order { max-height: 260px; } }
+
+.bs-call { padding-block: 96px; background: var(--plum-deep); }
+.bs-call h2 { margin: 0 0 32px; font: 800 clamp(56px, 9vw, 136px)/.82 var(--cond); font-stretch: 75%; text-transform: uppercase; }
+.bs-call-grid { display: grid; gap: 32px; }
+@media (min-width: 960px) { .bs-call-grid { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 56px; } }
+.callsheet { background: var(--card); color: var(--ink); }
+.callsheet header { display: flex; justify-content: space-between; gap: 12px; padding: 14px 18px; border-bottom: 2px solid var(--ink); font: 600 12px/1.2 var(--mono); text-transform: uppercase; }
+.callsheet dl { margin: 0; }
+.callsheet dl div { display: grid; grid-template-columns: minmax(7rem, 11rem) 1fr; gap: 14px; padding: 12px 18px; border-bottom: 1px solid #d8d2c8; }
+.callsheet dt { font: 400 12px/1.4 var(--mono); text-transform: uppercase; color: #6d5d62; }
+.callsheet dd { margin: 0; font: 600 16px/1.35 var(--cond); }
+.callsheet dd a { color: var(--ink); }
+@media (max-width: 520px) { .callsheet dl div { grid-template-columns: 1fr; gap: 2px; } }
+.bs-words p { margin: 0 0 18px; font: 400 19px/1.55 var(--cond); color: var(--chalk); max-width: 54ch; }
+.bs-words .lead { font: 700 clamp(26px, 3vw, 38px)/1.12 var(--cond); font-stretch: 85%; color: #fff; }
+.bs-words blockquote { margin: 32px 0 0; padding: 24px 0 0; border-top: 1px solid var(--plum-line); font: 600 clamp(22px, 2.4vw, 30px)/1.25 var(--cond); font-stretch: 85%; color: #fff; text-wrap: balance; }
+.bs-words cite { display: block; margin-top: 12px; font: 400 13px/1.3 var(--mono); font-style: normal; color: var(--rose); text-transform: uppercase; }
+.bs-polas { display: flex; gap: 14px; margin-top: 36px; flex-wrap: wrap; }
+.bs-polas figure { margin: 0; width: 150px; background: #fbfaf7; padding: 6px 6px 22px; box-shadow: 0 10px 20px rgba(0,0,0,.35); }
+.bs-polas figure:nth-child(1) { transform: rotate(-4deg); } .bs-polas figure:nth-child(2) { transform: rotate(3deg) translateY(10px); } .bs-polas figure:nth-child(3) { transform: rotate(-2deg); }
+.bs-polas img { width: 100%; aspect-ratio: 4/5; object-fit: cover; }
+.bs-polas figcaption { font: 400 10px/1.2 var(--mono); color: #5a4a50; margin-top: 6px; text-transform: uppercase; }
+
+.bs-foot { background: var(--plum); padding-block: 80px calc(110px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--plum-line); }
+.bs-foot h2 { margin: 0 0 16px; font: 800 clamp(64px, 13vw, 200px)/.8 var(--cond); font-stretch: 75%; text-transform: uppercase; }
+.bs-foot p { margin: 0 0 18px; font: 400 17px/1.5 var(--cond); color: var(--rose); max-width: 48ch; }
+#view-backstage .newsletter input[type=email] { border-bottom-color: var(--chalk); color: var(--chalk); font-family: var(--cond); font-size: 20px; }
+#view-backstage .newsletter input[type=email]::placeholder { color: rgba(239,233,223,.45); }
+#view-backstage .newsletter .agree { color: var(--rose); font-family: var(--cond); font-size: 15px; }
+#view-backstage .newsletter .agree input { accent-color: var(--tape); }
+#view-backstage .nl-status { font-family: var(--cond); color: var(--chalk); }
+#view-backstage .nl-status[data-state="error"] { color: #ffb4a8; }
+.bs-foot-grid { display: grid; gap: 32px; }
+@media (min-width: 900px) { .bs-foot-grid { grid-template-columns: 1.3fr 1fr; } }
+.bs-links { display: grid; gap: 8px; align-content: start; font: 400 14px/1.3 var(--mono); }
+.bs-links a { color: var(--chalk); }
+.bs-proto { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--plum-line); font: 400 12px/1.5 var(--mono); color: var(--rose); max-width: 90ch; }
+
+#backstage-sheet { background: var(--plum-deep); color: var(--chalk); width: min(900px, 100%); }
+#backstage-bag { background: var(--plum-deep); color: var(--chalk); width: min(480px, 100%); }
+#backstage-sheet .sheet-close, #backstage-bag .sheet-close { color: var(--chalk); }
+.dress { display: grid; gap: 0; }
+@media (min-width: 760px) { .dress { grid-template-columns: 1fr 1fr; min-height: 100%; } }
+.dress-photo { position: relative; background: #000; }
+.dress-photo img { width: 100%; height: 100%; max-height: 82vh; object-fit: cover; }
+@media (min-width: 760px) { .dress-photo img { max-height: none; position: absolute; inset: 0; } .dress-photo { min-height: 100vh; } }
+.dress-photo .tape { position: absolute; left: 16px; top: calc(16px + env(safe-area-inset-top, 0px)); font-size: 14px; transform: rotate(-3deg); }
+.dress-info { padding: 28px max(20px, env(safe-area-inset-right, 0px)) 28px 24px; }
+.dress-meta { margin: 0 0 6px; font: 400 12px/1.2 var(--mono); text-transform: uppercase; color: var(--rose); }
+.dress h2 { margin: 0 0 16px; font: 800 clamp(40px, 5vw, 60px)/.86 var(--cond); font-stretch: 75%; text-transform: uppercase; padding-right: 40px; }
+.dress-flat { width: 150px; background: var(--plum); padding: 8px; margin-bottom: 16px; }
+.dress-spec { list-style: none; margin: 0 0 20px; padding: 0; border-top: 1px solid var(--plum-line); }
+.dress-spec li { display: grid; grid-template-columns: 6rem 1fr; padding: 10px 0; border-bottom: 1px solid var(--plum-line); font: 600 16px/1.3 var(--cond); }
+.dress-spec span { font: 400 12px/1.6 var(--mono); text-transform: uppercase; color: var(--rose); }
+.dress-spec small { font-weight: 400; color: var(--rose); }
+.dress .sizes legend { font: 400 12px/1 var(--mono); text-transform: uppercase; color: var(--rose); margin-bottom: 10px; }
+.dress .size span { border: 1px solid var(--plum-line); font: 600 15px/1 var(--cond); }
+.dress .size input:checked + span { background: var(--card); color: var(--ink); border-color: var(--card); }
+.dress .size input:focus-visible + span { outline: 2px solid var(--tape); outline-offset: 2px; }
+.dress .size-error { color: #ffb4a8; }
+.dress form { display: grid; gap: 16px; }
+.dress form .btn-card { justify-content: center; min-height: 54px; }
+.dress-status { min-height: 1.4em; margin: 14px 0 0; font: 400 15px/1.4 var(--cond); color: var(--tape); }
+#backstage-bag .sheet-body { padding-inline: max(20px, env(safe-area-inset-left, 0px)); }
+#backstage-bag .bag-head h2 { font: 800 44px/.9 var(--cond); font-stretch: 75%; }
+#backstage-bag .bag-head p, #backstage-bag .bag-empty { color: var(--rose); font-family: var(--cond); font-size: 16px; }
+.bs-lines { list-style: none; margin: 0 0 12px; padding: 0; }
+.bs-line { display: grid; grid-template-columns: 56px 1fr 44px; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--plum-line); }
+.bs-line img { width: 56px; aspect-ratio: 4/5; object-fit: cover; }
+.bs-line b { display: block; font: 700 17px/1.1 var(--cond); }
+.bs-line small { font: 400 12px/1.4 var(--mono); color: var(--rose); }
+.bs-line button { width: 44px; height: 44px; border: 0; background: none; display: grid; place-items: center; }
+.bs-line svg { width: 18px; height: 18px; }
+#backstage-bag .bag-total { border-top-color: var(--chalk); font-family: var(--mono); }
+#backstage-bag .btn-card { width: 100%; justify-content: center; min-height: 54px; }
+
+/* ===========================================================================
+   C · SHOWROOM — the category standard, played straight
+   ========================================================================= */
+#view-showroom, #showroom-sheet, #showroom-bag {
+  /* layout: dissolving film -> serif headline -> oak hangers on a brass rail -> editorial story -> collections -> news -> newsletter */
+  --stone: #ebeae6; --stone-2: #dedcd6; --white: #f8f7f4; --ink: #151515; --ink-2: #5d5b57; --oak: #6e4b30; --brass: #a98852;
+  --hanger-wood: #6e4b30; --hanger-hook: #a98852;
+  --serif: 'Bodoni Moda', 'Didot', 'Bodoni 72', Georgia, serif;
+  --sans: 'Albert Sans', 'Helvetica Neue', Arial, sans-serif;
+  color: var(--ink); font-family: var(--sans);
+}
+#view-showroom ::selection { background: var(--ink); color: var(--white); }
+#view-showroom :focus-visible, #showroom-sheet :focus-visible, #showroom-bag :focus-visible { outline: 1.5px solid var(--ink); outline-offset: 3px; }
+.sr-top { position: fixed; top: 0; left: 0; right: 0; z-index: 40; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px;
+  padding-top: calc(12px + env(safe-area-inset-top, 0px)); padding-bottom: 12px; color: #fff; transition: background .35s, color .35s; }
+#view-showroom.is-past .sr-top { background: rgba(235,234,230,.97); color: var(--ink); }
+.sr-top .logo { width: 56px; height: 56px; justify-self: center; }
+.sr-top .logo .dk { display: none; }
+#view-showroom.is-past .sr-top .logo .lt { display: none; }
+#view-showroom.is-past .sr-top .logo .dk { display: block; }
+.sr-nav { display: flex; gap: 2px; }
+.sr-nav.right { justify-content: flex-end; }
+.sr-nav button { border: 0; background: none; padding: 10px; font: 500 12px/1 var(--sans); text-transform: uppercase; letter-spacing: .14em; }
+.sr-nav button:hover { text-decoration: underline; text-underline-offset: 5px; }
+@media (max-width: 560px) { .sr-nav.left button:not(:first-child) { display: none; } }
+.sr-hero .hero-shade { position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(0,0,0,.35) 0, rgba(0,0,0,0) 24%, rgba(0,0,0,0) 52%, rgba(0,0,0,.45) 100%); }
+.sr-hero-copy { position: absolute; z-index: 2; left: 0; right: 0; bottom: 80px; color: #fff; }
+.sr-hero h1 { margin: 0 0 22px; font: 400 clamp(40px, 6.4vw, 96px)/1 var(--serif); font-variation-settings: "opsz" 96; letter-spacing: -.02em; max-width: 13ch; text-wrap: balance; }
+.sr-hero h1 em { font-style: italic; }
+.link-cta { display: inline-flex; align-items: center; gap: 10px; border: 0; border-bottom: 1px solid currentColor; background: none; padding: 6px 0; font: 500 12px/1 var(--sans); text-transform: uppercase; letter-spacing: .16em; }
+.link-cta svg { width: 14px; height: 14px; }
+.btn-solid { display: inline-flex; justify-content: center; align-items: center; border: 0; background: var(--ink); color: var(--white); min-height: 52px; padding: 0 22px; font: 500 12px/1 var(--sans); text-transform: uppercase; letter-spacing: .16em; }
+.btn-solid:disabled { background: #8f8d88; cursor: not-allowed; }
+#view-showroom .btn-line, #showroom-bag .btn-line { font-family: var(--sans); font-weight: 500; letter-spacing: .16em; }
+
+.sr-shop { padding-block: 96px 64px; background: var(--stone); }
+.sr-shop-head { display: grid; gap: 16px; justify-items: center; text-align: center; margin-bottom: 20px; }
+.sr-shop-head h2 { margin: 0; font: 400 clamp(40px, 5vw, 72px)/1 var(--serif); font-variation-settings: "opsz" 72; }
+.sr-filters { display: flex; justify-content: center; gap: 4px 18px; flex-wrap: wrap; }
+.sr-filters .chip { border: 0; background: none; padding: 8px 2px; font: 500 12px/1 var(--sans); text-transform: uppercase; letter-spacing: .14em; color: var(--ink-2); border-bottom: 1px solid transparent; }
+.sr-filters .chip[aria-pressed="true"] { color: var(--ink); border-bottom-color: var(--ink); }
+.sr-rail { --rail-item: 210px; --rail-spacing: 236px; height: 500px; margin-top: 28px; overflow: hidden; }
+@media (max-width: 640px) { .sr-rail { --rail-item: 160px; --rail-spacing: 172px; height: 380px; } }
+.sr-rail::before { content: ""; position: absolute; left: 0; right: 0; top: calc(var(--rail-item) * .034); height: 6px; border-radius: 3px; background: linear-gradient(180deg, #d8c08f, #a98852 55%, #7d6236); box-shadow: 0 2px 4px rgba(0,0,0,.18); }
+.sr-rail .hang-btn { filter: drop-shadow(0 18px 16px rgba(40,30,20,.14)); transition: filter .4s; }
+.sr-rail .hang:not(.is-center) .hang-btn { filter: drop-shadow(0 18px 16px rgba(40,30,20,.14)) saturate(.85) brightness(.98); }
+.sr-rail .hang-btn:focus-visible { outline: 1.5px solid var(--ink); outline-offset: 6px; }
+.sr-caption { display: grid; justify-items: center; text-align: center; gap: 6px; margin-top: 8px; min-height: 110px; }
+.sr-cap-name { margin: 0; font: 400 clamp(24px, 2.6vw, 32px)/1.1 var(--serif); font-style: italic; }
+.sr-cap-meta { margin: 0; font: 400 14px/1.4 var(--sans); color: var(--ink-2); }
+.sr-nav-row { display: flex; align-items: center; justify-content: center; gap: 18px; margin-top: 12px; }
+.sr-nav-row > button:not(.link-cta) { width: 48px; height: 48px; border: 1px solid var(--ink); background: none; border-radius: 50%; display: grid; place-items: center; }
+.sr-nav-row svg { width: 18px; height: 18px; }
+.sr-count { font: 500 12px/1 var(--sans); letter-spacing: .14em; font-variant-numeric: tabular-nums; min-width: 6ch; text-align: center; }
+
+.sr-story { background: var(--white); }
+.sr-story-grid { display: grid; }
+@media (min-width: 960px) { .sr-story-grid { grid-template-columns: 1fr 1fr; } }
+.sr-story-img img { width: 100%; height: 100%; max-height: 92vh; object-fit: cover; aspect-ratio: 4/5; }
+.sr-story-copy { padding-block: 72px; align-self: center; }
+.sr-story-copy h2 { margin: 0 0 28px; font: 400 clamp(40px, 5vw, 76px)/1 var(--serif); font-variation-settings: "opsz" 72; text-wrap: balance; }
+.sr-story-copy p { margin: 0 0 18px; font: 300 18px/1.65 var(--sans); max-width: 52ch; color: #2c2b29; }
+.sr-story-copy .pull { font: 400 italic 24px/1.4 var(--serif); color: var(--ink); max-width: 30ch; margin-top: 28px; }
+.sr-three { display: grid; gap: 28px; margin-top: 40px; border-top: 1px solid var(--stone-2); padding-top: 28px; }
+@media (min-width: 600px) { .sr-three { grid-template-columns: repeat(3, 1fr); } }
+.sr-three h3 { margin: 0 0 8px; font: 500 12px/1 var(--sans); text-transform: uppercase; letter-spacing: .16em; }
+.sr-three p { margin: 0; font: 300 15px/1.55 var(--sans); color: var(--ink-2); }
+
+.sr-colls { padding-block: 96px; background: var(--stone); }
+.sr-colls h2, .sr-news h2 { margin: 0 0 32px; font: 400 clamp(36px, 4.4vw, 60px)/1 var(--serif); }
+.sr-coll-grid { display: grid; gap: 20px; }
+@media (min-width: 760px) { .sr-coll-grid { grid-template-columns: repeat(3, 1fr); } }
+.sr-coll { margin: 0; }
+.sr-coll img { width: 100%; aspect-ratio: 3/4; object-fit: cover; }
+.sr-coll figcaption { display: flex; justify-content: space-between; gap: 12px; padding-top: 12px; font: 500 12px/1.4 var(--sans); text-transform: uppercase; letter-spacing: .14em; }
+.sr-coll figcaption span:last-child { color: var(--ink-2); }
+.sr-news { padding-block: 0 96px; background: var(--stone); }
+.sr-news ol { list-style: none; margin: 0; padding: 0; border-top: 1px solid #cfccc5; }
+.sr-news li a { display: grid; grid-template-columns: 9rem 1fr auto; gap: 20px; align-items: baseline; padding: 22px 0; border-bottom: 1px solid #cfccc5; color: var(--ink); text-decoration: none; }
+.sr-news time { font: 500 12px/1.4 var(--sans); text-transform: uppercase; letter-spacing: .12em; color: var(--ink-2); }
+.sr-news .t { font: 400 clamp(20px, 2vw, 26px)/1.25 var(--serif); }
+.sr-news .go { font: 500 12px/1 var(--sans); text-transform: uppercase; letter-spacing: .14em; }
+.sr-news li a:hover .t { text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1px; }
+@media (max-width: 640px) { .sr-news li a { grid-template-columns: 1fr; gap: 6px; } .sr-news .go { display: none; } }
+.sr-foot { background: var(--ink); color: var(--white); padding-block: 80px calc(110px + env(safe-area-inset-bottom, 0px)); }
+.sr-foot h2 { margin: 0 0 14px; font: 400 clamp(44px, 7vw, 104px)/1 var(--serif); }
+.sr-foot p { margin: 0 0 18px; font: 300 16px/1.6 var(--sans); color: #c9c7c1; max-width: 48ch; }
+.sr-foot-grid { display: grid; gap: 40px; }
+@media (min-width: 900px) { .sr-foot-grid { grid-template-columns: 1.3fr 1fr; } }
+#view-showroom .newsletter input[type=email] { border-bottom: 1px solid var(--white); color: var(--white); font: 300 18px/1 var(--sans); }
+#view-showroom .newsletter input[type=email]::placeholder { color: rgba(248,247,244,.45); }
+#view-showroom .newsletter .agree { color: #c9c7c1; font: 300 14px/1.5 var(--sans); }
+#view-showroom .newsletter .agree input { accent-color: var(--white); }
+#view-showroom .nl-status { font: 300 14px/1.4 var(--sans); color: var(--white); }
+#view-showroom .nl-status[data-state="error"] { color: #ffb4a8; }
+#view-showroom .newsletter .link-cta { color: var(--white); margin-left: 16px; }
+#view-showroom .sr-foot :focus-visible { outline-color: var(--white); }
+.sr-links { display: grid; gap: 10px; align-content: start; font: 500 12px/1.3 var(--sans); text-transform: uppercase; letter-spacing: .14em; }
+.sr-links a { color: var(--white); text-decoration: none; }
+.sr-links a:hover { text-decoration: underline; }
+.sr-proto { margin-top: 48px; padding-top: 18px; border-top: 1px solid #3a3936; font: 300 13px/1.6 var(--sans); color: #a9a7a1; max-width: 90ch; }
+
+#showroom-sheet { background: var(--white); color: var(--ink); width: min(980px, 100%); }
+#showroom-bag { background: var(--white); color: var(--ink); width: min(460px, 100%); }
+.pdp { display: grid; }
+@media (min-width: 820px) { .pdp { grid-template-columns: 1.1fr 1fr; } }
+.pdp-media { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; background: var(--stone); }
+@media (min-width: 820px) { .pdp-media { grid-template-columns: 1fr; } }
+.pdp-flat { background: var(--stone); padding: 24px 12px; display: grid; place-items: center; }
+.pdp-flat .flat { width: min(260px, 100%); }
+.pdp-media img { width: 100%; height: 100%; object-fit: cover; aspect-ratio: 2/3; }
+.pdp-info { padding: 56px max(24px, env(safe-area-inset-right, 0px)) 32px 28px; }
+.pdp-coll { margin: 0 0 10px; font: 500 12px/1 var(--sans); text-transform: uppercase; letter-spacing: .16em; color: var(--ink-2); }
+.pdp h2 { margin: 0 0 10px; font: 400 clamp(32px, 3.6vw, 46px)/1.05 var(--serif); text-wrap: balance; }
+.pdp-price { margin: 0 0 28px; font: 400 18px/1 var(--sans); font-variant-numeric: tabular-nums; }
+.pdp-price small { margin-left: 8px; font-size: 12px; color: var(--ink-2); text-transform: uppercase; letter-spacing: .12em; }
+.pdp .sizes legend { font: 500 12px/1 var(--sans); text-transform: uppercase; letter-spacing: .16em; margin-bottom: 12px; }
+.pdp .size span { border: 1px solid #c9c6bf; font: 400 14px/1 var(--sans); }
+.pdp .size input:checked + span { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.pdp .size input:focus-visible + span { outline: 1.5px solid var(--ink); outline-offset: 2px; }
+.pdp .size-error { color: #a3261b; }
+.pdp form { display: grid; gap: 18px; }
+.pdp-status { min-height: 1.4em; margin: 14px 0; font: 400 14px/1.4 var(--sans); }
+.pdp details { border-top: 1px solid var(--stone-2); padding: 14px 0; }
+.pdp details:last-of-type { border-bottom: 1px solid var(--stone-2); }
+.pdp summary { cursor: pointer; font: 500 12px/1.4 var(--sans); text-transform: uppercase; letter-spacing: .16em; }
+.pdp details p { margin: 10px 0 0; font: 300 15px/1.6 var(--sans); color: #33322f; }
+#showroom-bag .sheet-body { padding-inline: max(24px, env(safe-area-inset-left, 0px)); }
+#showroom-bag .bag-head h2 { font: 400 40px/1 var(--serif); }
+.sr-lines { list-style: none; margin: 0 0 12px; padding: 0; }
+.sr-line { display: grid; grid-template-columns: 72px 1fr auto; gap: 14px; align-items: start; padding: 14px 0; border-top: 1px solid var(--stone-2); }
+.sr-line-art { background: var(--stone); padding: 4px; }
+.sr-line b { display: block; font: 400 18px/1.2 var(--serif); margin-bottom: 4px; }
+.sr-line small { display: block; font: 300 13px/1.5 var(--sans); color: var(--ink-2); }
+.link { border: 0; background: none; padding: 6px 0; font: 500 11px/1 var(--sans); text-transform: uppercase; letter-spacing: .14em; text-decoration: underline; text-underline-offset: 4px; }
+#showroom-bag .bag-total { border-top: 1px solid var(--ink); font: 400 15px/1 var(--sans); }
+#showroom-bag .bag-total b { font: 400 20px/1 var(--sans); }
+#showroom-bag .btn-solid { width: 100%; }
+</style>
+</head>
+<body>
+
+<nav class="switcher" aria-label="Concepts">
+  <span class="sw-label">KEKA concepts</span>
+  <a href="#conveyor">Conveyor</a>
+  <a href="#backstage">Backstage</a>
+  <a href="#showroom">Showroom</a>
+</nav>
+
+<!-- ======================================================= A · CONVEYOR -->
+<div class="view" id="view-conveyor">
+  <header class="cv-top wrap">
+    <a class="logo" href="#conveyor" aria-label="KEKA home"><img class="lt" src="media/keka-logo-light.png" alt="KEKA" width="640" height="640"><img class="dk" src="media/keka-logo-dark.png" alt="" width="640" height="640"></a>
+    <nav class="cv-nav" aria-label="KEKA">
+      <button type="button" data-scroll="rail">Rail</button>
+      <button type="button" data-scroll="about">About</button>
+      <button type="button" class="js-bag">Bag<span class="count js-bag-count">0</span></button>
+    </nav>
+  </header>
+  <section class="hero cv-hero" aria-label="KEKA film">
+    <video class="film" data-film="conveyor" muted loop playsinline preload="auto" poster="media/conveyor-desktop.jpg" aria-hidden="true"></video>
+    <div class="hero-shade"></div>
+    <div class="claim">
+      <div class="claim-top"><span>KEKA claim ticket</span><span>No. 0001</span></div>
+      <h1>Fashion as identity. Form as freedom.</h1>
+      <p>Pieces from TRACE and the Tudor collection, hung on one rail. Pull any of them to the counter.</p>
+      <div class="claim-actions">
+        <button type="button" class="btn-ink" data-scroll="rail">Go to the rail <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v15M6 13l6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="square"/></svg></button>
+        <span class="claim-note">Store opening soon</span>
+      </div>
+    </div>
+    <p class="cv-credit">TRACE · London Fashion Day S7<br>Tudor · London Fashion Day S5</p>
+    <button type="button" class="film-toggle" aria-pressed="false"><svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2h3v12H4zM9 2h3v12H9z" fill="currentColor"/></svg><svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2l10 6-10 6z" fill="currentColor"/></svg><span class="vh">Pause film</span></button>
+  </section>
+
+  <section class="cv-shop wrap" data-anchor="rail" aria-labelledby="cv-rail-title">
+    <header class="cv-shop-head">
+      <h2 id="cv-rail-title">The rail</h2>
+      <p>Fourteen pieces, each with its own ticket. Drag the rail, hold the motor buttons, or call a ticket number to the counter.</p>
+    </header>
+    <div class="cv-filters" role="group" aria-label="Filter the rail"></div>
+    <div class="rail cv-rail" tabindex="0" role="region" aria-label="Garment conveyor. Arrow keys move it.">
+      <div class="cv-bar" aria-hidden="true"></div>
+      <ul class="cv-track"></ul>
+      <span class="cv-mark" aria-hidden="true"></span>
+    </div>
+    <div class="cv-counter">
+      <button type="button" class="motor" data-motor="-1" aria-label="Run the rail back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="square"/></svg><span>Back</span></button>
+      <div class="led" data-state="ok" aria-live="polite"><span class="led-label">At the counter</span><span class="led-no">101</span><span class="led-text">Belted Trench · TRACE</span></div>
+      <button type="button" class="motor" data-motor="1" aria-label="Run the rail forward"><span>Forward</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="square"/></svg></button>
+    </div>
+    <div class="cv-counter-2">
+      <form class="cv-call" novalidate><label for="cv-ticket">Ticket no.</label><input id="cv-ticket" name="ticket" inputmode="numeric" maxlength="3" placeholder="107" autocomplete="off"><button type="submit">Call</button></form>
+      <button type="button" class="btn-ink cv-collect">Collect this piece</button>
+    </div>
+    <p class="cv-hint">Tap a garment to open its ticket. Hold Back or Forward to run the motor.</p>
+  </section>
+
+  <section class="cv-about wrap" data-anchor="about" aria-labelledby="cv-about-title">
+    <h2 id="cv-about-title">Clothing, as a language.</h2>
+    <div class="cv-about-grid">
+      <div class="cv-about-copy">
+        <p class="lead">KEKA approaches clothing as a visual language. Precise construction meets softer silhouettes, while clear lines exist alongside a more instinctive approach to dressing.</p>
+        <p>Built around clarity of line and attention to proportion, KEKA moves between structure and ease, masculine and feminine codes, historical references and contemporary form.</p>
+        <p>Minimalism is not the absence of detail. It is the decision to leave only what matters.</p>
+      </div>
+      <ul class="labels" aria-label="Design language">
+        <li class="label"><b>Form</b><span>Silhouette begins with proportion. Structure gives each piece clarity without making it rigid.</span></li>
+        <li class="label"><b>Identity</b><span>Clothing becomes personal when it leaves room for the wearer rather than prescribing who they should be.</span></li>
+        <li class="label"><b>Expression</b><span>Detail is used with intention, allowing character, emotion and individuality to emerge without excess.</span></li>
+      </ul>
+    </div>
+    <figure class="cv-quote">
+      <div class="bag-photo"><img src="media/photos/photo-229.jpg" alt="Organza trench from TRACE on the runway" loading="lazy" width="800" height="1200"></div>
+      <div><blockquote>Clothes are freedom to express yourself. They are your protection and your way of speaking without words.</blockquote>
+      <figcaption>Kostiantyn Lieontiev, designer of KEKA and founder of London Fashion Day</figcaption></div>
+    </figure>
+  </section>
+
+  <section class="cv-log wrap" aria-labelledby="cv-log-title">
+    <h2 id="cv-log-title">Runway log</h2>
+    <ol class="roll">
+      <li><time datetime="2026-05-01">01 May 2026</time><span class="ev">TRACE, London Fashion Day Season 7<small>Trench coats from structured wool to matte organza; pleated trousers and culottes.</small></span><a href="https://keka.design/keka-presented-trace-at-london-fashion-day-season-7/" target="_blank" rel="noopener"><img src="media/photos/photo-223.jpg" alt="Read about TRACE" loading="lazy" width="800" height="1200"></a></li>
+      <li><time datetime="2026-01">Jan 2026</time><span class="ev">Harbin Fashion Week<small>First visit to China, in the Global Fashion Net programme.</small></span><a href="https://keka.design/keka-at-harbin-fashion-week-first-visit-to-china-and-a-new-international-chapter/" target="_blank" rel="noopener"><img src="media/photos/photo-216.jpg" alt="Read about Harbin Fashion Week" loading="lazy" width="800" height="1200"></a></li>
+      <li><time datetime="2025-04">Apr 2025</time><span class="ev">Tudor collection, London Fashion Day Season 5<small>Tudor tailoring in wool, cotton and organza; collars by Mason Sophy G.</small></span><a href="https://keka.design/keka-brings-tudor-inspired-fashion-to-life-at-london-fashion-day/" target="_blank" rel="noopener"><img src="media/photos/DSC02700.jpg" alt="Read about the Tudor collection" loading="lazy" width="800" height="1200"></a></li>
+      <li><time datetime="2024-04-20">20 Apr 2024</time><span class="ev">Debut men's collection, London Fashion Day<small>The first KEKA menswear on the London runway.</small></span><a href="https://keka.design/keka-brand-unveils-debut-mens-collection-at-london-fashion-day/" target="_blank" rel="noopener"><img src="media/photos/IMG_3801.jpg" alt="Read about the debut men's collection" loading="lazy" width="1600" height="1067"></a></li>
+    </ol>
+  </section>
+
+  <footer class="cv-foot wrap">
+    <h2>Be like KEKA.</h2>
+    <div class="cv-foot-grid">
+      <div>
+        <p>Discover new collections, visual stories, runway moments and the latest from KEKA. The store opens soon; subscribers hear first.</p>
+        <form class="newsletter" novalidate>
+          <div class="nl-row"><label class="vh" for="cv-email">Email address</label><input id="cv-email" type="email" required placeholder="Your email" autocomplete="email"><button type="submit" class="btn-ink">Subscribe</button></div>
+          <label class="agree" for="cv-agree"><input id="cv-agree" type="checkbox" required> I agree to receive news, collections and updates from KEKA.</label>
+          <p class="nl-status" role="status"></p>
+        </form>
+      </div>
+      <div class="cv-links">
+        <a href="https://www.instagram.com/keka_fashion/" target="_blank" rel="noopener">Instagram · @keka_fashion</a>
+        <a href="https://www.facebook.com/kekabrand" target="_blank" rel="noopener">Facebook · kekabrand</a>
+        <a href="https://keka.design/contact/" target="_blank" rel="noopener">Contact</a>
+        <a href="https://keka.design/privacy-policy/" target="_blank" rel="noopener">Privacy policy</a>
+      </div>
+    </div>
+    <p class="cv-proto">Concept prototype for keka.design. Garment drawings are based on TRACE and Tudor runway looks; prices are samples. Runway photography from keka.design (Tudor photographed by tomash.ph). © 2026 KEKA.</p>
+  </footer>
+</div>
+
+<dialog class="sheet" id="conveyor-sheet" aria-labelledby="cv-title"><div class="sheet-inner"><button type="button" class="sheet-close" data-close aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button><div class="sheet-body"></div></div></dialog>
+<dialog class="sheet" id="conveyor-bag" aria-label="Bag"><div class="sheet-inner"><button type="button" class="sheet-close" data-close aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button><div class="sheet-body"></div></div></dialog>
+
+<!-- ======================================================= B · BACKSTAGE -->
+<div class="view" id="view-backstage" hidden>
+  <header class="bs-top wrap">
+    <a class="logo" href="#backstage" aria-label="KEKA home"><img src="media/keka-logo-light.png" alt="KEKA" width="640" height="640"></a>
+    <nav class="bs-nav" aria-label="KEKA">
+      <button type="button" data-scroll="looks">Looks</button>
+      <button type="button" data-scroll="call">Call sheet</button>
+      <button type="button" class="js-bag">Bag<span class="count js-bag-count">0</span></button>
+    </nav>
+  </header>
+  <section class="hero bs-hero" aria-label="KEKA film">
+    <video class="film" data-film="backstage" muted loop playsinline preload="metadata" aria-hidden="true"></video>
+    <div class="hero-shade"></div>
+    <div class="bs-hero-copy wrap">
+      <span class="tape">KEKA · TRACE · Backstage, London</span>
+      <h1>Be like KEKA</h1>
+      <p>Fashion as identity. Form as freedom. Every look from the runway, hung and numbered.</p>
+      <button type="button" class="btn-card" data-scroll="looks">See the looks <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v15M6 13l6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="square"/></svg></button>
+    </div>
+    <button type="button" class="film-toggle" aria-pressed="false"><svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2h3v12H4zM9 2h3v12H9z" fill="currentColor"/></svg><svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2l10 6-10 6z" fill="currentColor"/></svg><span class="vh">Pause film</span></button>
+  </section>
+
+  <section class="bs-show wrap" data-anchor="looks" aria-labelledby="bs-title">
+    <div class="bs-show-head">
+      <h2 id="bs-title">The looks</h2>
+      <p>The dressers' rail before the show. Each piece carries its look card and the polaroid from the runway.</p>
+    </div>
+    <div class="bs-filters" role="group" aria-label="Filter the looks"></div>
+    <div class="bs-stage">
+      <div>
+        <div class="rail bs-rail" tabindex="0" role="region" aria-label="Rail of looks. Arrow keys move it."><ul class="bs-track"></ul></div>
+        <div class="bs-controls">
+          <button type="button" class="bs-prev" aria-label="Previous look"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="square"/></svg></button>
+          <button type="button" class="bs-next" aria-label="Next look"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="square"/></svg></button>
+          <p>Drag the rail, or pick a look from the running order.</p>
+        </div>
+      </div>
+      <aside class="sheet-paper" aria-labelledby="ro-title">
+        <h3 id="ro-title">Running order</h3>
+        <p class="ro-sub">Show call 19:00 · Look every 25 sec</p>
+        <ol class="bs-order"></ol>
+      </aside>
+    </div>
+  </section>
+
+  <section class="bs-call wrap" data-anchor="call" aria-labelledby="bs-call-title">
+    <h2 id="bs-call-title">Call sheet</h2>
+    <div class="bs-call-grid">
+      <div class="callsheet">
+        <header><span>KEKA · Contemporary fashion brand</span><span>keka.design</span></header>
+        <dl>
+          <div><dt>Designer</dt><dd>Kostiantyn Lieontiev, also founder and producer of London Fashion Day</dd></div>
+          <div><dt>Made with</dt><dd>Atelier Novikova, Ukraine, from the designer's original sketches</dd></div>
+          <div><dt>Tudor collars</dt><dd>Mason Sophy G., made exclusively for KEKA</dd></div>
+          <div><dt>Fabrics</dt><dd>Wool, linen, cotton, knitwear, organza</dd></div>
+          <div><dt>Latest show</dt><dd><a href="https://keka.design/keka-presented-trace-at-london-fashion-day-season-7/" target="_blank" rel="noopener">TRACE, London Fashion Day Season 7, 1 May 2026</a></dd></div>
+          <div><dt>Before that</dt><dd><a href="https://keka.design/keka-at-harbin-fashion-week-first-visit-to-china-and-a-new-international-chapter/" target="_blank" rel="noopener">Harbin Fashion Week, January 2026</a> · <a href="https://keka.design/keka-brings-tudor-inspired-fashion-to-life-at-london-fashion-day/" target="_blank" rel="noopener">Tudor collection, April 2025</a> · <a href="https://keka.design/keka-brand-unveils-debut-mens-collection-at-london-fashion-day/" target="_blank" rel="noopener">Debut men's collection, April 2024</a></dd></div>
+          <div><dt>Follow</dt><dd><a href="https://www.instagram.com/keka_fashion/" target="_blank" rel="noopener">@keka_fashion</a></dd></div>
+        </dl>
+      </div>
+      <div class="bs-words">
+        <p class="lead">Clothing, as a language.</p>
+        <p>Structured forms, contemporary tailoring and visual experimentation become part of an evolving design language rather than a fixed formula.</p>
+        <p>Minimalism is not the absence of detail. It is the decision to leave only what matters.</p>
+        <blockquote>I don't really care if you're a man or a woman, how old you are or what your views are. Clothes are freedom to express yourself.<cite>Kostiantyn Lieontiev</cite></blockquote>
+        <div class="bs-polas" aria-hidden="true">
+          <figure><img src="media/photos/DSC02726.jpg" alt="" loading="lazy" width="800" height="1200"><figcaption>Tudor · corset, ruff</figcaption></figure>
+          <figure><img src="media/photos/photo-224.jpg" alt="" loading="lazy" width="800" height="1200"><figcaption>TRACE · cropped jacket</figcaption></figure>
+          <figure><img src="media/photos/photo-213.jpg" alt="" loading="lazy" width="800" height="1200"><figcaption>TRACE · tartan</figcaption></figure>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="bs-foot wrap">
+    <h2>Be like KEKA.</h2>
+    <div class="bs-foot-grid">
+      <div>
+        <p>Discover new collections, visual stories, runway moments and the latest from KEKA. The store opens soon; subscribers hear first.</p>
+        <form class="newsletter" novalidate>
+          <div class="nl-row"><label class="vh" for="bs-email">Email address</label><input id="bs-email" type="email" required placeholder="Your email" autocomplete="email"><button type="submit" class="btn-card">Subscribe</button></div>
+          <label class="agree" for="bs-agree"><input id="bs-agree" type="checkbox" required> I agree to receive news, collections and updates from KEKA.</label>
+          <p class="nl-status" role="status"></p>
+        </form>
+      </div>
+      <div class="bs-links">
+        <a href="https://www.instagram.com/keka_fashion/" target="_blank" rel="noopener">Instagram · @keka_fashion</a>
+        <a href="https://www.facebook.com/kekabrand" target="_blank" rel="noopener">Facebook · kekabrand</a>
+        <a href="https://keka.design/contact/" target="_blank" rel="noopener">Contact</a>
+        <a href="https://keka.design/privacy-policy/" target="_blank" rel="noopener">Privacy policy</a>
+      </div>
+    </div>
+    <p class="bs-proto">Concept prototype for keka.design. Garment drawings are based on TRACE and Tudor runway looks; prices are samples. Runway photography from keka.design (Tudor photographed by tomash.ph). © 2026 KEKA.</p>
+  </footer>
+</div>
+
+<dialog class="sheet" id="backstage-sheet" aria-label="Look"><div class="sheet-inner"><button type="button" class="sheet-close" data-close aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button><div class="sheet-body"></div></div></dialog>
+<dialog class="sheet" id="backstage-bag" aria-label="Bag"><div class="sheet-inner"><button type="button" class="sheet-close" data-close aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button><div class="sheet-body"></div></div></dialog>
+
+<!-- ======================================================= C · SHOWROOM -->
+<div class="view" id="view-showroom" hidden>
+  <header class="sr-top wrap">
+    <nav class="sr-nav left" aria-label="Shop"><button type="button" data-scroll="shop">Shop</button><button type="button" data-scroll="collections">Collections</button><button type="button" data-scroll="story">About</button></nav>
+    <a class="logo" href="#showroom" aria-label="KEKA home"><img class="lt" src="media/keka-logo-light.png" alt="KEKA" width="640" height="640"><img class="dk" src="media/keka-logo-dark.png" alt="" width="640" height="640"></a>
+    <nav class="sr-nav right" aria-label="Account"><button type="button" class="js-bag">Bag (<span class="js-bag-count">0</span>)</button></nav>
+  </header>
+  <section class="hero sr-hero" aria-label="KEKA film">
+    <video class="film" data-film="showroom" muted loop playsinline preload="metadata" aria-hidden="true"></video>
+    <div class="hero-shade"></div>
+    <div class="sr-hero-copy wrap">
+      <h1>Fashion as identity. <em>Form as freedom.</em></h1>
+      <button type="button" class="link-cta" data-scroll="shop">Shop the rail <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v15M6 13l6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/></svg></button>
+    </div>
+    <button type="button" class="film-toggle" aria-pressed="false"><svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2h3v12H4zM9 2h3v12H9z" fill="currentColor"/></svg><svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2l10 6-10 6z" fill="currentColor"/></svg><span class="vh">Pause film</span></button>
+  </section>
+
+  <section class="sr-shop wrap" data-anchor="shop" aria-labelledby="sr-shop-title">
+    <div class="sr-shop-head">
+      <h2 id="sr-shop-title">The wardrobe</h2>
+      <div class="sr-filters" role="group" aria-label="Filter the wardrobe"></div>
+    </div>
+    <div class="rail sr-rail" tabindex="0" role="region" aria-label="Wardrobe rail. Arrow keys move it."><ul class="sr-track"></ul></div>
+    <div class="sr-caption" aria-live="polite">
+      <p class="sr-cap-name">Tartan Double-Breasted Jacket</p>
+      <p class="sr-cap-meta">TRACE · Wool tartan · $640</p>
+      <div class="sr-nav-row">
+        <button type="button" class="sr-prev" aria-label="Previous piece"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/></svg></button>
+        <span class="sr-count">03 / 14</span>
+        <button type="button" class="sr-next" aria-label="Next piece"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/></svg></button>
+      </div>
+      <button type="button" class="link-cta sr-view">View piece</button>
+    </div>
+  </section>
+
+  <section class="sr-story" data-anchor="story" aria-labelledby="sr-story-title">
+    <div class="sr-story-grid">
+      <div class="sr-story-img"><img src="media/photos/photo-229.jpg" alt="Organza trench from the TRACE collection on the runway" loading="lazy" width="800" height="1200"></div>
+      <div class="sr-story-copy wrap">
+        <h2 id="sr-story-title">Clothing, as a language.</h2>
+        <p>KEKA explores clothing as a form of identity and self-expression, balancing precise construction with freedom, movement and an instinctive approach to dressing.</p>
+        <p>Built around clarity of line and attention to proportion, KEKA moves between structure and ease, masculine and feminine codes, historical references and contemporary form.</p>
+        <p class="pull">Minimalism is not the absence of detail. It is the decision to leave only what matters.</p>
+        <div class="sr-three">
+          <div><h3>Form</h3><p>Silhouette begins with proportion. Structure gives each piece clarity without making it rigid.</p></div>
+          <div><h3>Identity</h3><p>Clothing becomes personal when it leaves room for the wearer.</p></div>
+          <div><h3>Expression</h3><p>Detail is used with intention, without excess.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sr-colls wrap" data-anchor="collections" aria-labelledby="sr-colls-title">
+    <h2 id="sr-colls-title">Collections</h2>
+    <div class="sr-coll-grid">
+      <figure class="sr-coll"><img src="media/photos/photo-223.jpg" alt="TRACE look: burgundy cropped jacket and pinstripe trousers" loading="lazy" width="800" height="1200"><figcaption><span>TRACE</span><span>2026</span></figcaption></figure>
+      <figure class="sr-coll"><img src="media/photos/DSC02744.jpg" alt="Tudor look: satin pinafore over an organza blouse with a ruff" loading="lazy" width="800" height="1200"><figcaption><span>Tudor</span><span>AW25-26</span></figcaption></figure>
+      <figure class="sr-coll"><img src="media/photos/photo-226.jpg" alt="TRACE look: tartan suit over an ivory shirt" loading="lazy" width="800" height="1200"><figcaption><span>Tailoring</span><span>TRACE</span></figcaption></figure>
+    </div>
+  </section>
+
+  <section class="sr-news wrap" aria-labelledby="sr-news-title">
+    <h2 id="sr-news-title">News</h2>
+    <ol>
+      <li><a href="https://keka.design/keka-presented-trace-at-london-fashion-day-season-7/" target="_blank" rel="noopener"><time datetime="2026-05-16">16 May 2026</time><span class="t">KEKA presented TRACE at London Fashion Day Season 7</span><span class="go">Read</span></a></li>
+      <li><a href="https://keka.design/keka-at-harbin-fashion-week-first-visit-to-china-and-a-new-international-chapter/" target="_blank" rel="noopener"><time datetime="2026-01-23">23 Jan 2026</time><span class="t">KEKA at Harbin Fashion Week: first visit to China</span><span class="go">Read</span></a></li>
+      <li><a href="https://keka.design/keka-brings-tudor-inspired-fashion-to-life-at-london-fashion-day/" target="_blank" rel="noopener"><time datetime="2025-04-29">29 Apr 2025</time><span class="t">KEKA brings Tudor-inspired fashion to life at London Fashion Day</span><span class="go">Read</span></a></li>
+      <li><a href="https://keka.design/keka-brand-unveils-debut-mens-collection-at-london-fashion-day/" target="_blank" rel="noopener"><time datetime="2024-04-20">20 Apr 2024</time><span class="t">KEKA unveils its debut men's collection at London Fashion Day</span><span class="go">Read</span></a></li>
+    </ol>
+  </section>
+
+  <footer class="sr-foot wrap">
+    <h2>Be like KEKA.</h2>
+    <div class="sr-foot-grid">
+      <div>
+        <p>Discover new collections, visual stories, runway moments and the latest from KEKA. The store opens soon; subscribers hear first.</p>
+        <form class="newsletter" novalidate>
+          <div class="nl-row"><label class="vh" for="sr-email">Email address</label><input id="sr-email" type="email" required placeholder="Email address" autocomplete="email"><button type="submit" class="link-cta">Subscribe</button></div>
+          <label class="agree" for="sr-agree"><input id="sr-agree" type="checkbox" required> I agree to receive news, collections and updates from KEKA.</label>
+          <p class="nl-status" role="status"></p>
+        </form>
+      </div>
+      <div class="sr-links">
+        <a href="https://www.instagram.com/keka_fashion/" target="_blank" rel="noopener">Instagram</a>
+        <a href="https://www.facebook.com/kekabrand" target="_blank" rel="noopener">Facebook</a>
+        <a href="https://keka.design/contact/" target="_blank" rel="noopener">Contact</a>
+        <a href="https://keka.design/privacy-policy/" target="_blank" rel="noopener">Privacy policy</a>
+      </div>
+    </div>
+    <p class="sr-proto">Concept prototype for keka.design. Garment drawings are based on TRACE and Tudor runway looks; prices are samples. Runway photography from keka.design (Tudor photographed by tomash.ph). © 2026 KEKA.</p>
+  </footer>
+</div>
+
+<dialog class="sheet" id="showroom-sheet" aria-label="Piece"><div class="sheet-inner"><button type="button" class="sheet-close" data-close aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button><div class="sheet-body"></div></div></dialog>
+<dialog class="sheet" id="showroom-bag" aria-label="Bag"><div class="sheet-inner"><button type="button" class="sheet-close" data-close aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button><div class="sheet-body"></div></div></dialog>
+
+<script>/* KEKA garment flats.
+   Technical flats drawn from TRACE (2026) and Tudor (AW25-26) runway looks.
+   Each garment renders into a 200 x 420 viewBox; the hanger hook tip sits at (100, 4)
+   and the shoulder line at y ~ 56. */
+(function () {
+  const W = 200, CX = 100;
+
+  // --- path helpers --------------------------------------------------------
+  // A half-outline is a list of points on the LEFT side, from the top centre,
+  // down and around to the bottom centre. A point is [x, y] or
+  // ['q', cx, cy, x, y] (quadratic curve from the previous point).
+  function mx(x) { return 2 * CX - x; }
+  function sym(half) {
+    const pts = half.map(p => (p[0] === 'q' ? p : ['l', p[0], p[1]]));
+    let d = `M${pts[0][1]},${pts[0][2]}`;
+    for (let i = 1; i < pts.length; i++) {
+      const p = pts[i];
+      d += p[0] === 'q' ? ` Q${p[1]},${p[2]} ${p[3]},${p[4]}` : ` L${p[1]},${p[2]}`;
+    }
+    // walk back up the mirrored side
+    for (let i = pts.length - 1; i > 0; i--) {
+      const p = pts[i], prev = pts[i - 1];
+      const px = prev[0] === 'q' ? prev[3] : prev[1];
+      const py = prev[0] === 'q' ? prev[4] : prev[2];
+      d += p[0] === 'q' ? ` Q${mx(p[1])},${p[2]} ${mx(px)},${py}` : ` L${mx(px)},${py}`;
+    }
+    return d + ' Z';
+  }
+  function both(fn) { return fn(false) + fn(true); }
+  const X = (x, m) => (m ? mx(x) : x);
+
+  function shade(hex, k) {
+    const n = parseInt(hex.slice(1), 16);
+    let r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+    const f = c => Math.max(0, Math.min(255, Math.round(k < 0 ? c * (1 + k) : c + (255 - c) * k)));
+    return '#' + [f(r), f(g), f(b)].map(v => v.toString(16).padStart(2, '0')).join('');
+  }
+
+  // --- patterns --------------------------------------------------------------
+  function patternDefs(id, g) {
+    const c = g.color, line = g.line;
+    switch (g.pattern) {
+      case 'tartan':
+        return `<pattern id="${id}" width="28" height="28" patternUnits="userSpaceOnUse">
+          <rect width="28" height="28" fill="${c}"/>
+          <rect y="9" width="28" height="7" fill="${g.c2}" opacity=".55"/>
+          <rect x="9" width="7" height="28" fill="${g.c2}" opacity=".55"/>
+          <rect y="21" width="28" height="1.2" fill="${g.c3}" opacity=".9"/>
+          <rect x="21" width="1.2" height="28" fill="${g.c3}" opacity=".9"/>
+          <rect y="3" width="28" height="2" fill="${shade(c, -0.35)}" opacity=".6"/>
+          <rect x="3" width="2" height="28" fill="${shade(c, -0.35)}" opacity=".6"/>
+        </pattern>`;
+      case 'pinstripe':
+        return `<pattern id="${id}" width="7" height="10" patternUnits="userSpaceOnUse">
+          <rect width="7" height="10" fill="${c}"/><rect x="3" width=".9" height="10" fill="${g.c2}" opacity=".8"/></pattern>`;
+      case 'check':
+        return `<pattern id="${id}" width="8" height="8" patternUnits="userSpaceOnUse">
+          <rect width="8" height="8" fill="${c}"/><rect width="4" height="4" fill="${g.c2}" opacity=".45"/>
+          <rect x="4" y="4" width="4" height="4" fill="${g.c2}" opacity=".45"/></pattern>`;
+      case 'sequin':
+        return `<pattern id="${id}" width="6" height="5.2" patternUnits="userSpaceOnUse">
+          <rect width="6" height="5.2" fill="${c}"/><circle cx="1.5" cy="1.3" r="1.25" fill="${g.c2}"/>
+          <circle cx="4.5" cy="3.9" r="1.25" fill="${g.c2}"/><circle cx="1.1" cy="1" r=".4" fill="#fff" opacity=".55"/>
+          <circle cx="4.1" cy="3.6" r=".4" fill="#fff" opacity=".55"/></pattern>`;
+      case 'corset':
+        return `<pattern id="${id}" width="26" height="20" patternUnits="userSpaceOnUse">
+          <rect width="26" height="20" fill="${c}"/><path d="M0 0 L26 20 M26 0 L0 20" stroke="${g.c3}" stroke-width=".5" opacity=".7"/></pattern>`;
+      default:
+        return '';
+    }
+  }
+
+  // --- building blocks -----------------------------------------------------
+  // Jacket / coat / shirt outline from a few proportions.
+  function topOutline(o) {
+    const ny = o.neckY ?? 50;
+    const sh = [CX - o.shoulder, ny + (o.drop ?? 12)];
+    const sleeveTopOut = [sh[0] - (o.capOut ?? 6), sh[1] + 12];
+    const cuffOut = [CX - o.shoulder - o.spread, o.sleeveEnd];
+    const cuffIn = [cuffOut[0] + o.cuff, o.sleeveEnd + 2];
+    const arm = [CX - o.body, o.armY];
+    const half = [
+      [CX, ny + (o.backNeck ?? 2)],
+      [CX - o.neck, ny - 2],
+      sh,
+      sleeveTopOut,
+    ];
+    if (o.balloon) half.push(['q', cuffOut[0] - o.balloon, (sleeveTopOut[1] + cuffOut[1]) / 2, cuffOut[0], cuffOut[1]]);
+    else half.push(cuffOut);
+    half.push(cuffIn);
+    if (o.balloon) half.push(['q', cuffIn[0] + o.balloon * 0.2, (cuffIn[1] + arm[1]) / 2 + 10, arm[0], arm[1]]);
+    else half.push(arm);
+    if (o.waistY) half.push([CX - o.waist, o.waistY]);
+    half.push([CX - o.hem, o.hemY]);
+    if (o.hemCurve) half.push(['q', CX - o.hem * 0.5, o.hemY + o.hemCurve, CX, o.hemY + o.hemCurve * 0.6]);
+    else half.push([CX, o.hemY + (o.hemDip ?? 2)]);
+    return { d: sym(half), cuffOut, cuffIn, arm, sh, ny };
+  }
+
+  function buttons(xs, ys, r, fill, stroke) {
+    let s = '';
+    for (const y of ys) for (const x of xs) s += `<circle cx="${x}" cy="${y}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width=".8"/>`;
+    return s;
+  }
+  function cuffLine(t, line, offset = 14) {
+    return both(m => {
+      const a = t.cuffOut, b = t.cuffIn;
+      return `<path d="M${X(a[0] + 1, m)},${a[1] - offset} L${X(b[0] + 1, m)},${b[1] - offset}" stroke="${line}" fill="none"/>`;
+    });
+  }
+
+  // --- garments --------------------------------------------------------------
+  const DRAW = {
+    trench(g, F) {
+      const t = topOutline({ neck: 16, shoulder: 60, drop: 13, spread: 12, sleeveEnd: 262, cuff: 28, body: 47, armY: 118, waist: 47, waistY: 196, hem: 66, hemY: 398, hemDip: 2 });
+      const L = g.line;
+      const lapel = both(m => `<path d="M${X(84, m)},48 L${X(58, m)},70 L${X(66, m)},82 L${X(58, m)},96 L${X(m ? 88 : 112, m)},${m ? 156 : 150}" fill="${F}" stroke="${L}"/>`);
+      return `<path d="${t.d}" fill="${F}" stroke="${L}"/>
+        <path d="M112,150 L112,398" stroke="${L}" fill="none"/>
+        ${lapel}
+        <path d="M100,52 L84,48 L100,64 L116,48 Z" fill="${shade(g.color, -0.25)}" stroke="${L}"/>
+        ${both(m => `<path d="M${X(62, m)},66 L${X(44, m)},72 L${X(46, m)},80 L${X(64, m)},74 Z" fill="${F}" stroke="${L}"/>`)}
+        ${cuffLine(t, L, 22)}
+        <rect x="${CX - 50}" y="186" width="100" height="14" fill="${F}" stroke="${L}"/>
+        <rect x="70" y="183" width="16" height="20" rx="1.5" fill="none" stroke="${g.hardware || L}" stroke-width="2"/>
+        <path d="M150,193 Q166,210 158,236" stroke="${L}" fill="${F}" stroke-width="7" stroke-linecap="round" opacity=".9"/>
+        ${buttons([92, 132], [116, 140, 166], 3.2, g.hardware || shade(g.color, -0.4), L)}
+        ${both(m => `<path d="M${X(60, m)},248 L${X(70, m)},300" stroke="${L}" fill="none"/>`)}
+        <path d="M100,212 L100,398" stroke="${L}" opacity=".5" stroke-dasharray="3 3" fill="none"/>`;
+    },
+    coat(g, F) { // double-breasted long coat, peak lapels
+      const t = topOutline({ neck: 15, shoulder: 58, drop: 10, spread: 10, sleeveEnd: 258, cuff: 28, body: 46, armY: 116, waist: 46, waistY: 200, hem: 58, hemY: 394 });
+      const L = g.line;
+      const lapel = both(m => `<path d="M${X(85, m)},47 L${X(56, m)},74 L${X(48, m)},70 L${X(56, m)},94 L${X(m ? 90 : 110, m)},${m ? 172 : 168}" fill="${F}" stroke="${L}"/>`);
+      return `<path d="${t.d}" fill="${F}" stroke="${L}"/>
+        <path d="M100,52 L85,47 L100,62 L115,47 Z" fill="${shade(g.color, -0.3)}" stroke="${L}"/>
+        ${lapel}
+        <path d="M110,168 L110,394" stroke="${L}" fill="none"/>
+        ${buttons([86, 128], [180, 216, 252], 3.4, shade(g.color, -0.45), L)}
+        ${both(m => `<path d="M${X(52, m)},262 L${X(82, m)},262" stroke="${L}" fill="none"/><path d="M${X(52, m)},262 L${X(52, m)},268 L${X(82, m)},268 L${X(82, m)},262" fill="${F}" stroke="${L}"/>`)}
+        ${cuffLine(t, L, 18)}`;
+    },
+    jacket(g, F) { // tailored, double-breasted, slightly cropped
+      const len = g.cropped ? 214 : 246;
+      const t = topOutline({ neck: 15, shoulder: g.cropped ? 62 : 58, drop: 9, spread: 8, sleeveEnd: g.cropped ? 252 : 250, cuff: 27, body: 47, armY: 116, waist: 45, waistY: 180, hem: 49, hemY: len });
+      const L = g.line;
+      const collar = g.cropped
+        ? both(m => `<path d="M${X(84, m)},47 L${X(48, m)},70 L${X(46, m)},96 L${X(m ? 92 : 108, m)},134" fill="${F}" stroke="${L}"/>`)
+        : both(m => `<path d="M${X(85, m)},47 L${X(60, m)},72 L${X(68, m)},80 L${X(58, m)},92 L${X(m ? 92 : 108, m)},${m ? 150 : 146}" fill="${F}" stroke="${L}"/>`);
+      return `<path d="${t.d}" fill="${F}" stroke="${L}"/>
+        <path d="M100,52 L85,47 L100,62 L115,47 Z" fill="${shade(g.color, -0.35)}" stroke="${L}"/>
+        ${collar}
+        <path d="M108,${g.cropped ? 134 : 146} L108,${len}" stroke="${L}" fill="none"/>
+        ${buttons([88, 126], g.cropped ? [150, 178] : [160, 196], 3.2, shade(g.color, -0.5), L)}
+        ${g.cropped ? '' : both(m => `<path d="M${X(56, m)},210 L${X(84, m)},210" stroke="${L}" fill="none"/>`)}
+        ${both(m => `<path d="M${X(64, m)},112 L${X(80, m)},112" stroke="${L}" fill="none"/>`)}
+        ${cuffLine(t, L, 16)}`;
+    },
+    waistcoat(g, F) {
+      const L = g.line;
+      const d = sym([[100, 56], [84, 48], [62, 58], ['q', 66, 92, 54, 112], [55, 214], [76, 232], [100, 222]]);
+      return `<path d="M84,48 Q100,58 116,48 L116,60 Q100,70 84,60 Z" fill="${shade(g.color, -0.35)}" stroke="${L}"/>
+        <path d="${d}" fill="${F}" stroke="${L}"/>
+        ${both(m => `<path d="M${X(84, m)},48 L${X(m ? 92 : 108, m)},150" stroke="${L}" fill="none"/>`)}
+        <path d="M108,150 L108,226" stroke="${L}" fill="none"/>
+        ${buttons([90, 126], [162, 186, 208], 2.8, shade(g.color, -0.5), L)}
+        ${both(m => `<path d="M${X(62, m)},196 L${X(82, m)},194" stroke="${L}" fill="none"/>`)}`;
+    },
+    knit(g, F) { // oversized drop-shoulder crew
+      const t = topOutline({ neck: 18, shoulder: 70, drop: 26, capOut: 4, spread: 6, sleeveEnd: 278, cuff: 30, body: 64, armY: 150, hem: 66, hemY: 250, hemDip: 0 });
+      const L = g.line;
+      let ribs = '';
+      for (let x = 38; x <= 162; x += 5) ribs += `<path d="M${x},234 L${x},252" stroke="${L}" opacity=".55"/>`;
+      let cuffRibs = '';
+      both(m => { for (let k = 0; k < 6; k++) { const x0 = t.cuffOut[0] + 3 + k * 4.6; cuffRibs += `<path d="M${X(x0, m)},${t.cuffOut[1] - 16} L${X(x0 + 1, m)},${t.cuffOut[1]}" stroke="${L}" opacity=".55"/>`; } return ''; });
+      return `<path d="${t.d}" fill="${F}" stroke="${L}"/>
+        <path d="M82,48 Q100,66 118,48 Q100,58 82,48 Z" fill="${shade(g.color, -0.35)}"/>
+        <path d="M82,48 Q100,70 118,48" stroke="${L}" fill="none"/><path d="M78,47 Q100,76 122,47" stroke="${L}" fill="none"/>
+        <path d="M34,234 L166,234" stroke="${L}" fill="none"/>${ribs}${cuffRibs}
+        ${both(m => `<path d="M${X(34, m)},76 Q${X(40, m)},120 ${X(36, m)},150" stroke="${L}" fill="none" opacity=".6"/>`)}`;
+    },
+    tank(g, F) {
+      const L = g.line;
+      const d = sym([[100, 92], ['q', 84, 92, 76, 50], [66, 50], ['q', 66, 96, 50, 116], [52, 252], [100, 256]]);
+      return `<path d="${d}" fill="${F}" stroke="${L}"/>
+        <path d="M76,50 Q84,96 100,96 Q116,96 124,50" stroke="${L}" fill="none" opacity=".5"/>
+        <path d="M52,240 L148,244" stroke="${L}" fill="none" opacity=".5"/>`;
+    },
+    shirt(g, F) { // organza shirt with balloon sleeves
+      const t = topOutline({ neck: 14, shoulder: 54, drop: 14, spread: 18, sleeveEnd: 258, cuff: 24, body: 46, armY: 118, hem: 48, hemY: 262, hemCurve: 10, balloon: 26 });
+      const L = g.line;
+      return `<path d="${t.d}" fill="${F}" stroke="${L}"/>
+        <path d="M100,56 L100,268" stroke="${L}" fill="none"/>
+        ${buttons([104], [80, 112, 144, 176, 208, 240], 2.1, '#fff', L)}
+        ${both(m => `<path d="M${X(t.cuffOut[0], m)},${t.cuffOut[1] - 14} L${X(t.cuffIn[0], m)},${t.cuffIn[1] - 14}" stroke="${L}" fill="none"/>`)}
+        ${ruffPath(100, 50, 30, 11, g.c2 || '#fff', L, 26)}`;
+    },
+    trouser(g, F) { // pleated wide trouser on a clip hanger
+      const L = g.line;
+      const wide = g.wide ?? 64;
+      const d = sym([[100, 60], [52, 60], ['q', 46, 110, 48, 170], [100 - wide, 398], [100 - wide + 50, 400], [100, 176]]);
+      let pleats = '';
+      both(m => { pleats += `<path d="M${X(80, m)},74 L${X(74, m)},180" stroke="${L}" fill="none"/><path d="M${X(70, m)},74 L${X(62, m)},140" stroke="${L}" fill="none" opacity=".7"/>`; return ''; });
+      return `<path d="${d}" fill="${F}" stroke="${L}"/>
+        <rect x="52" y="60" width="96" height="14" fill="${F}" stroke="${L}"/>
+        <path d="M100,74 L100,130" stroke="${L}" fill="none"/>
+        ${pleats}
+        ${both(m => `<path d="M${X(58, m)},76 Q${X(64, m)},92 ${X(54, m)},104" stroke="${L}" fill="none"/>`)}
+        ${both(m => `<path d="M${X(100 - wide + 25, m)},180 L${X(100 - wide + 25, m)},398" stroke="${L}" opacity=".35" fill="none"/>`)}`;
+    },
+    culotte(g, F) { // stitched-pleat culottes that read as a skirt
+      const L = g.line;
+      const d = sym([[100, 60], [56, 60], ['q', 46, 130, 30, 300], [100, 304]]);
+      let pleats = '';
+      for (let k = -3; k <= 3; k++) {
+        const x0 = 100 + k * 12, x1 = 100 + k * 22;
+        pleats += `<path d="M${x0},74 L${x0},130" stroke="${L}" stroke-dasharray="2.4 2" fill="none"/><path d="M${x0},130 L${x1},302" stroke="${L}" fill="none" opacity=".75"/>`;
+      }
+      return `<path d="${d}" fill="${F}" stroke="${L}"/>
+        <rect x="56" y="60" width="88" height="14" fill="${F}" stroke="${L}"/>${pleats}
+        <path d="M30,300 Q100,314 170,300" stroke="${L}" fill="none" opacity=".5"/>`;
+    },
+    corset(g, F) {
+      const L = g.line;
+      const d = sym([[100, 104], ['q', 92, 84, 78, 82], ['q', 62, 82, 56, 96], ['q', 66, 160, 62, 220], [100, 252]]);
+      let bones = '';
+      for (const x of [66, 78, 90, 110, 122, 134]) bones += `<path d="M${x},${86 + Math.abs(100 - x) * 0.08} Q${x + (x < 100 ? 3 : -3)},170 ${x + (x < 100 ? 5 : -5)},${236 - Math.abs(100 - x) * 0.55}" stroke="${g.c2}" stroke-width="2.2" fill="none"/>`;
+      return `${both(m => `<path d="M${X(70, m)},40 L${X(72, m)},84" stroke="${L}" stroke-width="1.4" fill="none"/>`)}
+        <path d="${d}" fill="${F}" stroke="${L}"/>${bones}
+        <path d="M100,104 L100,252" stroke="${L}" fill="none"/>`;
+    },
+    pinafore(g, F) { // satin pinafore dress with straps and a full skirt
+      const L = g.line;
+      const d = sym([[100, 112], [72, 112], [70, 200], ['q', 40, 300, 22, 392], ['q', 60, 404, 100, 402]]);
+      let folds = '';
+      for (const [a, b] of [[80, 54], [90, 76], [110, 124], [120, 146]]) folds += `<path d="M${a},214 Q${(a + b) / 2},300 ${b},398" stroke="${L}" fill="none" opacity=".45"/>`;
+      return `${both(m => `<path d="M${X(66, m)},42 L${X(74, m)},112" stroke="${L}" stroke-width="5" stroke-linecap="round" fill="none"/>`)}
+        <path d="${d}" fill="${F}" stroke="${L}"/>
+        <path d="M70,200 Q100,208 130,200" stroke="${L}" fill="none"/>${folds}
+        <path d="M84,140 L116,140" stroke="${L}" fill="none" opacity=".4"/>`;
+    },
+    ruff(g, F) {
+      return ruffPath(100, 120, 72, 22, F, g.line, 34) +
+        `<circle cx="100" cy="120" r="44" fill="none" stroke="${g.line}" stroke-dasharray="3 3" opacity=".5"/>
+         <path d="M100,4 L100,50" stroke="${g.line}" stroke-width="1.6" fill="none"/>`;
+    },
+  };
+
+  // A pleated ruff: a scalloped ring drawn as a ring of overlapping arcs.
+  function ruffPath(cx, cy, r, depth, fill, line, n) {
+    let outer = '';
+    for (let i = 0; i < n; i++) {
+      const a0 = (i / n) * Math.PI * 2, a1 = ((i + 1) / n) * Math.PI * 2, am = (a0 + a1) / 2;
+      const p0 = [cx + Math.cos(a0) * r, cy + Math.sin(a0) * r * 0.62];
+      const p1 = [cx + Math.cos(a1) * r, cy + Math.sin(a1) * r * 0.62];
+      const c = [cx + Math.cos(am) * (r + depth * 0.5), cy + Math.sin(am) * (r + depth * 0.5) * 0.62];
+      outer += (i === 0 ? `M${p0[0].toFixed(1)},${p0[1].toFixed(1)}` : '') + ` Q${c[0].toFixed(1)},${c[1].toFixed(1)} ${p1[0].toFixed(1)},${p1[1].toFixed(1)}`;
+    }
+    let folds = '';
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2;
+      folds += `M${(cx + Math.cos(a) * (r - depth)).toFixed(1)},${(cy + Math.sin(a) * (r - depth) * 0.62).toFixed(1)} L${(cx + Math.cos(a) * r).toFixed(1)},${(cy + Math.sin(a) * r * 0.62).toFixed(1)} `;
+    }
+    const inner = `M${cx - (r - depth)},${cy} a${r - depth},${(r - depth) * 0.62} 0 1,0 ${2 * (r - depth)},0 a${r - depth},${(r - depth) * 0.62} 0 1,0 ${-2 * (r - depth)},0`;
+    return `<path d="${outer} Z ${inner}" fill="${fill}" fill-rule="evenodd" stroke="${line}"/>
+      <path d="${folds}" stroke="${line}" opacity=".55" fill="none"/>`;
+  }
+
+  // --- hangers ---------------------------------------------------------------
+  const HANGERS = {
+    // dry-cleaner wire hanger with a paper shoulder guard
+    wire(kind) {
+      const hook = `<path d="M100,52 L100,30 Q100,8 88,8 Q78,8 78,18" fill="none" stroke="var(--hanger-wire, #9aa3ab)" stroke-width="2.4" stroke-linecap="round"/>`;
+      if (kind === 'bottom') return hook + `<path d="M40,60 L160,60" stroke="var(--hanger-wire, #9aa3ab)" stroke-width="2.4"/>
+        <path d="M40,60 L40,70 M160,60 L160,70" stroke="var(--hanger-wire, #9aa3ab)" stroke-width="2.4"/>`;
+      return hook + `<path d="M100,46 L34,72 L166,72 Z" fill="none" stroke="var(--hanger-wire, #9aa3ab)" stroke-width="2.4" stroke-linejoin="round"/>`;
+    },
+    guard() { // printed paper shoulder guard (front layer)
+      return `<path d="M100,44 L30,70 L36,82 L100,58 L164,82 L170,70 Z" fill="var(--guard-paper, #f4f1ea)" stroke="var(--guard-edge, #c9c2b6)" stroke-width=".8"/>
+        <text x="66" y="70" transform="rotate(-20 66 70)" font-size="7.5" font-weight="700" letter-spacing="1.5" fill="var(--guard-ink, #1b1f2a)" font-family="var(--font-sign, sans-serif)">KEKA</text>
+        <text x="122" y="56" transform="rotate(20 122 56)" font-size="6" letter-spacing="1" fill="var(--guard-ink, #1b1f2a)" font-family="var(--font-sign, sans-serif)">IN CARE</text>`;
+    },
+    wood(kind) {
+      const hook = `<path d="M100,46 L100,28 Q100,8 86,8 Q76,8 76,18" fill="none" stroke="var(--hanger-hook, #b08d57)" stroke-width="2.6" stroke-linecap="round"/>`;
+      if (kind === 'bottom') return hook + `<rect x="36" y="46" width="128" height="9" rx="3" fill="var(--hanger-wood, #7a5536)"/>
+        <rect x="44" y="52" width="10" height="16" rx="2" fill="var(--hanger-hook, #b08d57)"/><rect x="146" y="52" width="10" height="16" rx="2" fill="var(--hanger-hook, #b08d57)"/>`;
+      return hook + `<path d="M100,44 Q60,50 26,70 Q24,76 30,76 Q64,60 100,56 Q136,60 170,76 Q176,76 174,70 Q140,50 100,44 Z" fill="var(--hanger-wood, #7a5536)"/>`;
+    },
+    black(kind) {
+      const hook = `<path d="M100,46 L100,28 Q100,8 86,8 Q76,8 76,18" fill="none" stroke="var(--hanger-hook, #1a1a1a)" stroke-width="2.6" stroke-linecap="round"/>`;
+      if (kind === 'bottom') return hook + `<rect x="38" y="46" width="124" height="8" rx="2" fill="var(--hanger-body, #121212)"/>
+        <rect x="46" y="52" width="9" height="15" fill="var(--hanger-body, #121212)"/><rect x="145" y="52" width="9" height="15" fill="var(--hanger-body, #121212)"/>`;
+      return hook + `<path d="M100,44 L28,70 L30,76 L100,54 L170,76 L172,70 Z" fill="var(--hanger-body, #121212)"/>`;
+    },
+  };
+
+  const BOTTOM = new Set(['trouser', 'culotte']);
+
+  let uid = 0;
+  function svg(g, opts = {}) {
+    const id = `kp${uid++}`;
+    const defs = patternDefs(id, g);
+    const F = defs ? `url(#${id})` : g.color;
+    const style = opts.hanger || 'wood';
+    const kind = BOTTOM.has(g.type) ? 'bottom' : 'top';
+    const body = DRAW[g.type](g, F);
+    const sheer = g.sheer ? ` fill-opacity="${g.sheer}"` : '';
+    const back = g.type === 'ruff' ? '' : HANGERS[style](kind);
+    const front = style === 'wire' && kind === 'top' && g.type !== 'ruff' && !opts.noGuard ? HANGERS.guard() : '';
+    return `<svg viewBox="0 0 ${W} 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${g.name}" class="flat">
+      <defs>${defs}</defs>${back}
+      <g stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"${sheer}>${body}</g>${front}</svg>`;
+  }
+
+  // --- catalogue -------------------------------------------------------------
+  // Sample catalogue drawn from runway looks. Names describe the piece; prices are samples.
+  const CATALOG = [
+    { id: 'belted-trench', ticket: 101, name: 'Belted Trench', type: 'trench', cat: 'Outerwear', collection: 'TRACE', color: '#4b2834', line: '#26121a', hardware: '#1c0d12', fabric: 'Wool gabardine', price: 890, look: 'photo-209' },
+    { id: 'organza-trench', ticket: 102, name: 'Organza Trench', type: 'trench', cat: 'Outerwear', collection: 'TRACE', color: '#f1ece0', line: '#a89f8c', hardware: '#b38a3c', sheer: 0.62, fabric: 'Matte organza', price: 760, look: 'photo-229' },
+    { id: 'tartan-jacket', ticket: 103, name: 'Tartan Double-Breasted Jacket', type: 'jacket', cat: 'Tailoring', collection: 'TRACE', color: '#1f3a33', c2: '#0f1d33', c3: '#6d7f56', line: '#0b1512', pattern: 'tartan', fabric: 'Wool tartan', price: 640, look: 'photo-226' },
+    { id: 'pinstripe-trouser', ticket: 104, name: 'Pinstripe Pleated Trouser', type: 'trouser', cat: 'Trousers', collection: 'TRACE', color: '#1c2638', c2: '#9aa6bf', line: '#0c121d', pattern: 'pinstripe', wide: 66, fabric: 'Wool', price: 380, look: 'photo-214' },
+    { id: 'cropped-jacket', ticket: 105, name: 'Cropped Jacket', type: 'jacket', cropped: true, cat: 'Tailoring', collection: 'TRACE', color: '#7a1f2e', line: '#3b0c15', fabric: 'Wool', price: 560, look: 'photo-224' },
+    { id: 'tudor-corset', ticket: 106, name: 'Tudor Corset', type: 'corset', cat: 'Tops', collection: 'Tudor', color: '#efe7d6', c2: '#5c5148', c3: '#b9ad97', line: '#7b705f', pattern: 'corset', fabric: 'Cotton', price: 420, look: 'DSC02726' },
+    { id: 'db-coat', ticket: 107, name: 'Double-Breasted Coat', type: 'coat', cat: 'Outerwear', collection: 'TRACE', color: '#4a3326', line: '#21150e', fabric: 'Wool', price: 980, look: 'photo-225' },
+    { id: 'oversized-knit', ticket: 108, name: 'Oversized Knit', type: 'knit', cat: 'Knitwear', collection: 'TRACE', color: '#173e52', line: '#0a2130', fabric: 'Wool knit', price: 340, look: 'photo-210' },
+    { id: 'organza-ruff', ticket: 109, name: 'Organza Ruff', type: 'ruff', cat: 'Accessories', collection: 'Tudor', color: '#fbfaf6', line: '#a8b3bd', fabric: 'Organza', price: 180, look: 'DSC02600' },
+    { id: 'check-waistcoat', ticket: 110, name: 'Check Waistcoat', type: 'waistcoat', cat: 'Tailoring', collection: 'TRACE', color: '#8f949a', c2: '#3c4148', line: '#3b3f45', pattern: 'check', fabric: 'Wool check', price: 290, look: 'photo-220' },
+    { id: 'sequin-tank', ticket: 111, name: 'Sequin Tank', type: 'tank', cat: 'Tops', collection: 'TRACE', color: '#3a2618', c2: '#7d5a3a', line: '#1d120a', pattern: 'sequin', fabric: 'Sequin knit', price: 310, look: 'photo-214' },
+    { id: 'balloon-shirt', ticket: 112, name: 'Balloon-Sleeve Shirt', type: 'shirt', cat: 'Tops', collection: 'Tudor', color: '#f6f3ee', c2: '#c8302c', line: '#9d978c', sheer: 0.78, fabric: 'Cotton organza', price: 360, look: 'DSC02596' },
+    { id: 'pleat-culotte', ticket: 113, name: 'Stitched-Pleat Culotte', type: 'culotte', cat: 'Trousers', collection: 'TRACE', color: '#16181d', line: '#000000', fabric: 'Wool', price: 340, look: 'photo-222' },
+    { id: 'satin-pinafore', ticket: 114, name: 'Satin Pinafore Dress', type: 'pinafore', cat: 'Dresses', collection: 'Tudor', color: '#2c2a2b', line: '#0e0d0e', fabric: 'Satin', price: 520, look: 'DSC02744' },
+  ];
+  // lines for very dark pieces must stay visible on dark fills
+  for (const g of CATALOG) if (!g.line) g.line = shade(g.color, -0.5);
+
+  window.KEKA = { CATALOG, svg, shade };
+})();
+</script>
+<script>/* KEKA concepts: shared engine (bag, films, rail physics, dialogs) and the three views. */
+(() => {
+  const { CATALOG, svg } = window.KEKA;
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const money = n => '$' + n.toLocaleString('en-US');
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const CATS = ['All', ...new Set(CATALOG.map(g => g.cat))];
+  const SIZES = ['XS', 'S', 'M', 'L', 'XL'];
+  const sizesFor = g => (g.cat === 'Accessories' ? ['One size'] : SIZES);
+  const byId = id => CATALOG.find(g => g.id === id);
+  const lookPhoto = g => `media/photos/${g.look}.jpg`;
+
+  // ---------------------------------------------------------------- bag
+  const Bag = {
+    key: 'keka-concept-bag',
+    items: [],
+    subs: new Set(),
+    load() { try { this.items = JSON.parse(localStorage.getItem(this.key) || '[]').filter(i => byId(i.id)); } catch (e) { this.items = []; } },
+    save() { try { localStorage.setItem(this.key, JSON.stringify(this.items)); } catch (e) { /* storage unavailable */ } this.subs.forEach(f => f()); },
+    add(id, size) { this.items.push({ id, size, at: Date.now() }); this.save(); },
+    remove(i) { this.items.splice(i, 1); this.save(); },
+    count() { return this.items.length; },
+    total() { return this.items.reduce((s, i) => s + byId(i.id).price, 0); },
+    on(f) { this.subs.add(f); },
+  };
+  Bag.load();
+
+  // ---------------------------------------------------------------- films
+  function Film(root) {
+    const v = $('video.film', root);
+    const btn = $('.film-toggle', root);
+    const name = v.dataset.film;
+    let cur = null, wantPlay = !reduceMotion, active = false;
+    const pick = () => (innerHeight > innerWidth * 1.05 ? 'mobile' : 'desktop');
+    function load() {
+      const k = pick();
+      if (k !== cur) { cur = k; v.poster = `media/${name}-${k}.jpg`; v.src = `media/${name}-${k}.mp4`; }
+      sync();
+    }
+    function sync() {
+      if (active && wantPlay) { const p = v.play(); if (p) p.catch(() => {}); } else v.pause();
+      if (btn) { btn.setAttribute('aria-pressed', String(!wantPlay)); btn.querySelector('span').textContent = wantPlay ? 'Pause film' : 'Play film'; }
+    }
+    btn && btn.addEventListener('click', () => { wantPlay = !wantPlay; sync(); });
+    addEventListener('resize', () => { if (active) load(); });
+    return { start() { active = true; load(); }, stop() { active = false; v.pause(); } };
+  }
+
+  // header turns solid once the film is out of view
+  function pastHero(root) {
+    const hero = $('.hero', root);
+    new IntersectionObserver(([e]) => root.classList.toggle('is-past', e.intersectionRatio < 0.12), { threshold: [0, 0.12, 0.5] }).observe(hero);
+  }
+
+  // ---------------------------------------------------------------- rail
+  class Rail {
+    constructor(o) {
+      Object.assign(this, { loop: true, snap: true, coupling: 0.018, stiffness: 30, damping: 1.1, maxAngle: 16 }, o);
+      this.x = 0; this.v = 0; this.target = null; this.motor = 0; this.drag = null;
+      this.items = []; this.raf = 0; this.last = 0; this.centerIdx = -1; this.prevV = 0;
+      this.width = this.viewport.clientWidth;
+      this.bind();
+      new ResizeObserver(() => { this.measure(); this.kick(); }).observe(this.viewport);
+    }
+    measure() {
+      this.width = this.viewport.clientWidth;
+      const cs = getComputedStyle(this.viewport);
+      this.spacing = parseFloat(cs.getPropertyValue('--rail-spacing')) || 220;
+      this.itemW = parseFloat(cs.getPropertyValue('--rail-item')) || 200;
+      const n = this.items.length;
+      this.looping = this.loop && n * this.spacing > this.width + this.spacing * 1.5;
+    }
+    setItems(list) {
+      this.track.replaceChildren();
+      this.items = list.map((g, i) => {
+        const el = this.render(g, i);
+        el.style.setProperty('--i', i);
+        this.track.appendChild(el);
+        return { g, el, th: (Math.random() - 0.5) * 2, om: 0 };
+      });
+      this.measure();
+      this.x = 0; this.v = 0; this.target = null; this.centerIdx = -1;
+      this.kick();
+    }
+    maxX() { return Math.max(0, (this.items.length - 1) * this.spacing); }
+    index() {
+      const n = this.items.length; if (!n) return -1;
+      const i = Math.round(this.x / this.spacing);
+      return this.looping ? ((i % n) + n) % n : Math.max(0, Math.min(n - 1, i));
+    }
+    goTo(i, instant) {
+      const n = this.items.length; if (!n) return;
+      let t = i * this.spacing;
+      if (this.looping) { // shortest way round the loop
+        const total = n * this.spacing;
+        const cur = this.x;
+        t = cur + ((((t - cur) % total) + total * 1.5) % total) - total / 2;
+      }
+      if (instant || reduceMotion) { this.x = t; this.v = 0; this.target = null; } else this.target = t;
+      this.kick();
+    }
+    nudge(d) { this.goTo((this.target != null ? Math.round(this.target / this.spacing) : Math.round(this.x / this.spacing)) + d); }
+    hold(d) { this.motor = d; if (!d && this.snap) this.target = null; this.kick(); }
+    bind() {
+      const vp = this.viewport;
+      let lastPX = 0, lastPT = 0, pvx = 0;
+      vp.addEventListener('pointerdown', e => {
+        if (e.button !== 0) return;
+        this.drag = { id: e.pointerId, x0: e.clientX, x: e.clientX, t: performance.now(), moved: false, vx: 0, start: this.x };
+        this.target = null;
+      });
+      vp.addEventListener('pointermove', e => {
+        const now = performance.now();
+        if (this.drag && e.pointerId === this.drag.id) {
+          const dx = e.clientX - this.drag.x;
+          if (!this.drag.moved && Math.abs(e.clientX - this.drag.x0) > 6) { this.drag.moved = true; vp.setPointerCapture(e.pointerId); vp.classList.add('is-dragging'); }
+          if (this.drag.moved) {
+            const dt = Math.max(1, now - this.drag.t) / 1000;
+            let nx = this.x - dx;
+            if (!this.looping) { const m = this.maxX(); if (nx < 0) nx = this.x - dx * 0.35; if (nx > m) nx = this.x - dx * 0.35; }
+            this.drag.vx = 0.8 * (-dx / dt) + 0.2 * this.drag.vx;
+            this.x = nx; this.v = this.drag.vx;
+            this.kick();
+          }
+          this.drag.x = e.clientX; this.drag.t = now;
+        } else if (e.pointerType === 'mouse') { // brush past the garments
+          const dt = Math.max(8, now - lastPT) / 1000;
+          pvx = (e.clientX - lastPX) / dt;
+          if (lastPT && Math.abs(pvx) < 6000) this.brush(e.clientX, e.clientY, pvx);
+        }
+        lastPX = e.clientX; lastPT = now;
+      });
+      const end = e => {
+        if (!this.drag || e.pointerId !== this.drag.id) return;
+        const moved = this.drag.moved;
+        if (moved) { this.v = Math.max(-4000, Math.min(4000, this.drag.vx)); vp.classList.remove('is-dragging'); this.suppressClick = true; setTimeout(() => (this.suppressClick = false), 0); }
+        this.drag = null; this.kick();
+      };
+      vp.addEventListener('pointerup', end);
+      vp.addEventListener('pointercancel', end);
+      vp.addEventListener('click', e => { if (this.suppressClick) { e.stopPropagation(); e.preventDefault(); } }, true);
+      vp.addEventListener('wheel', e => {
+        const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : (e.shiftKey ? e.deltaY : 0);
+        if (!d) return;
+        e.preventDefault();
+        this.target = null; this.x += d; this.v = d * 30; this.kick();
+        clearTimeout(this.wheelT); this.wheelT = setTimeout(() => this.kick(), 60);
+      }, { passive: false });
+      vp.addEventListener('keydown', e => {
+        if (e.key === 'ArrowRight') { e.preventDefault(); this.nudge(1); }
+        else if (e.key === 'ArrowLeft') { e.preventDefault(); this.nudge(-1); }
+        else if (e.key === 'Home') { e.preventDefault(); this.goTo(0); }
+        else if (e.key === 'End') { e.preventDefault(); this.goTo(this.items.length - 1); }
+      });
+      vp.addEventListener('focusin', e => {
+        const li = e.target.closest('[data-index]');
+        if (li && !this.drag) this.goTo(+li.dataset.index);
+      });
+    }
+    brush(px, py, vx) {
+      const r = this.viewport.getBoundingClientRect();
+      if (py < r.top || py > r.bottom) return;
+      for (const it of this.items) {
+        if (it.sx == null) continue;
+        const c = r.left + it.sx + this.itemW / 2;
+        const dist = Math.abs(px - c);
+        if (dist < this.itemW * 0.45) { it.om += vx * 0.0045 * (1 - dist / (this.itemW * 0.45)); this.kick(); }
+      }
+    }
+    kick() { if (!this.raf && this.running) { this.last = performance.now(); this.raf = requestAnimationFrame(t => this.tick(t)); } }
+    start() { this.running = true; this.measure(); this.kick(); }
+    stop() { this.running = false; cancelAnimationFrame(this.raf); this.raf = 0; }
+    tick(t) {
+      this.raf = 0;
+      const dt = Math.min(0.034, (t - this.last) / 1000 || 0.016); this.last = t;
+      const n = this.items.length;
+      if (!this.drag) {
+        if (this.motor) {
+          this.v += (this.motor * 620 - this.v) * Math.min(1, dt * 5);
+          this.x += this.v * dt;
+        } else if (this.target != null) {
+          const k = 70, c = 2 * Math.sqrt(k) * 0.92;
+          this.v += (k * (this.target - this.x) - c * this.v) * dt;
+          this.x += this.v * dt;
+          if (Math.abs(this.target - this.x) < 0.3 && Math.abs(this.v) < 4) { this.x = this.target; this.v = 0; this.target = null; }
+        } else {
+          this.x += this.v * dt;
+          this.v *= Math.pow(0.06, dt);
+          if (!this.looping) {
+            const m = this.maxX();
+            if (this.x < 0 || this.x > m) { this.target = Math.max(0, Math.min(m, this.x)); }
+          }
+          if (this.snap && this.target == null && Math.abs(this.v) < 160) {
+            this.target = Math.round(this.x / this.spacing) * this.spacing;
+            if (!this.looping) this.target = Math.max(0, Math.min(this.maxX(), this.target));
+          }
+        }
+      }
+      const accel = (this.v - this.prevV) / dt; this.prevV = this.v;
+      const total = n * this.spacing;
+      let busy = this.drag || this.motor || this.target != null || Math.abs(this.v) > 2;
+      for (let i = 0; i < n; i++) {
+        const it = this.items[i];
+        const a = -this.stiffness * it.th - this.damping * it.om - (reduceMotion ? 0 : accel * this.coupling);
+        it.om += a * dt; it.th += it.om * dt;
+        it.th = Math.max(-this.maxAngle, Math.min(this.maxAngle, it.th));
+        if (reduceMotion) { it.th = 0; it.om = 0; }
+        if (Math.abs(it.th) > 0.03 || Math.abs(it.om) > 0.06) busy = true;
+        let rel = i * this.spacing - this.x;
+        if (this.looping) rel = ((((rel + total / 2) % total) + total) % total) - total / 2;
+        const sx = this.width / 2 + rel - this.itemW / 2;
+        it.sx = sx;
+        const vis = sx > -this.itemW * 1.5 && sx < this.width + this.itemW * 0.5;
+        it.el.style.visibility = vis ? 'visible' : 'hidden';
+        if (vis) it.el.style.transform = `translate3d(${sx.toFixed(1)}px,0,0) rotate(${it.th.toFixed(2)}deg)`;
+      }
+      const ci = this.index();
+      if (ci !== this.centerIdx) {
+        if (this.items[this.centerIdx]) this.items[this.centerIdx].el.classList.remove('is-center');
+        this.centerIdx = ci;
+        if (this.items[ci]) { this.items[ci].el.classList.add('is-center'); this.onCenter && this.onCenter(this.items[ci].g, ci); }
+      }
+      if (busy && this.running) this.raf = requestAnimationFrame(tt => this.tick(tt));
+    }
+  }
+
+  // ---------------------------------------------------------------- dialogs
+  function Sheet(dlg) {
+    let opener = null;
+    const close = () => {
+      if (!dlg.open) return;
+      dlg.classList.add('is-closing');
+      setTimeout(() => { dlg.classList.remove('is-closing'); dlg.close(); opener && opener.focus && opener.focus({ preventScroll: true }); }, reduceMotion ? 0 : 260);
+    };
+    dlg.addEventListener('cancel', e => { e.preventDefault(); close(); });
+    dlg.addEventListener('click', e => { if (e.target === dlg || e.target.closest('[data-close]')) close(); });
+    return {
+      open(html) { opener = document.activeElement; if (html != null) $('.sheet-body', dlg).innerHTML = html; if (!dlg.open) dlg.showModal(); $('.sheet-body', dlg).scrollTop = 0; const f = $('[data-autofocus]', dlg) || $('.sheet-close', dlg); f && f.focus({ preventScroll: true }); },
+      close, el: dlg, body: () => $('.sheet-body', dlg),
+    };
+  }
+
+  function sizeField(g, name) {
+    const s = sizesFor(g);
+    return `<fieldset class="sizes"><legend>Size</legend><div class="size-row">${s.map((z, i) => `
+      <label class="size"><input type="radio" name="${name}" value="${z}" ${s.length === 1 ? 'checked' : ''} id="${name}-${i}"><span>${z}</span></label>`).join('')}</div>
+      <p class="size-error" role="alert" hidden>Choose a size first.</p></fieldset>`;
+  }
+  function wireAdd(scope, g, name, onAdded) {
+    const form = $('form', scope);
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const picked = $(`input[name="${name}"]:checked`, form);
+      const err = $('.size-error', form);
+      if (!picked) { err.hidden = false; $(`input[name="${name}"]`, form).focus(); return; }
+      err.hidden = true;
+      Bag.add(g.id, picked.value);
+      onAdded && onAdded(picked.value);
+    });
+    $$(`input[name="${name}"]`, form).forEach(r => r.addEventListener('change', () => { $('.size-error', form).hidden = true; }));
+  }
+
+  function bagLines(render) {
+    if (!Bag.count()) return null;
+    return Bag.items.map((it, i) => render(byId(it.id), it, i)).join('');
+  }
+  function wireBag(sheet, rerender) {
+    sheet.body().addEventListener('click', e => {
+      const b = e.target.closest('[data-remove]');
+      if (b) { Bag.remove(+b.dataset.remove); rerender(); }
+    });
+  }
+
+  // shared newsletter handler: there is nowhere to send it in a prototype
+  function wireNewsletter(root) {
+    $$('form.newsletter', root).forEach(f => f.addEventListener('submit', e => {
+      e.preventDefault();
+      const email = $('input[type=email]', f), ok = $('.nl-status', f);
+      if (!email.checkValidity()) { ok.textContent = 'Enter an email address like name@example.com.'; ok.dataset.state = 'error'; email.focus(); return; }
+      ok.textContent = 'Noted for the prototype. Nothing was sent; the live site will connect this to the mailing list.';
+      ok.dataset.state = 'ok';
+    }));
+  }
+  function wireScrollButtons(root) {
+    $$('[data-scroll]', root).forEach(b => b.addEventListener('click', () => {
+      const t = $(`[data-anchor="${b.dataset.scroll}"]`, root);
+      t && t.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+    }));
+  }
+  function filterBar(el, onPick) {
+    el.innerHTML = CATS.map((c, i) => `<button type="button" class="chip" aria-pressed="${i === 0}" data-cat="${c}">${c}</button>`).join('');
+    el.addEventListener('click', e => {
+      const b = e.target.closest('[data-cat]'); if (!b) return;
+      $$('[data-cat]', el).forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+      onPick(b.dataset.cat === 'All' ? CATALOG : CATALOG.filter(g => g.cat === b.dataset.cat));
+    });
+  }
+
+  const ICON = {
+    left: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="square"/></svg>',
+    right: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="square"/></svg>',
+    down: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v15M6 13l6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="square"/></svg>',
+    close: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>',
+  };
+
+  // ================================================================= CONVEYOR
+  function initConveyor() {
+    const root = $('#view-conveyor');
+    const film = Film(root);
+    pastHero(root);
+    const led = $('.led-text', root);
+    const ledNo = $('.led-no', root);
+    const sheet = Sheet($('#conveyor-sheet'));
+    const bagSheet = Sheet($('#conveyor-bag'));
+    const cover = `<svg class="cover" viewBox="0 0 200 420" aria-hidden="true"><path d="M100,40 L22,70 L18,414 Q100,420 182,414 L178,70 Z" class="cover-film"/>
+      <path d="M44,90 L40,380" class="cover-sheen"/><path d="M54,100 L52,250" class="cover-sheen thin"/><path d="M160,96 L158,330" class="cover-sheen thin"/></svg>`;
+    const rail = new Rail({
+      viewport: $('.cv-rail', root), track: $('.cv-track', root),
+      render(g, i) {
+        const li = document.createElement('li');
+        li.className = 'hang'; li.dataset.index = i;
+        li.innerHTML = `<button type="button" class="hang-btn" aria-label="Ticket ${g.ticket}: ${esc(g.name)}, ${money(g.price)}">
+          ${svg(g, { hanger: 'wire' })}${cover}
+          <span class="tag" aria-hidden="true"><b>No. ${g.ticket}</b><span>${esc(g.name)}</span></span></button>`;
+        $('button', li).addEventListener('click', () => { rail.goTo(i); openPiece(g); });
+        return li;
+      },
+      onCenter(g) { ledNo.textContent = String(g.ticket); led.textContent = `${g.name} · ${g.collection}`; led.parentElement.dataset.state = 'ok'; },
+    });
+    filterBar($('.cv-filters', root), list => rail.setItems(list));
+    rail.setItems(CATALOG);
+
+    $$('[data-motor]', root).forEach(b => {
+      const d = +b.dataset.motor;
+      let held = false, t0 = 0;
+      b.addEventListener('pointerdown', e => { t0 = performance.now(); held = true; b.setPointerCapture(e.pointerId); setTimeout(() => { if (held) rail.hold(d); }, 180); });
+      const up = () => { if (!held) return; held = false; if (performance.now() - t0 < 180) rail.nudge(d); rail.hold(0); };
+      b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up); b.addEventListener('lostpointercapture', up);
+      b.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); rail.nudge(d); } });
+    });
+    $('.cv-call', root).addEventListener('submit', e => {
+      e.preventDefault();
+      const input = $('input', e.target);
+      const n = parseInt(input.value, 10);
+      const idx = rail.items.findIndex(it => it.g.ticket === n);
+      if (idx < 0) {
+        const anywhere = CATALOG.find(g => g.ticket === n);
+        ledNo.textContent = isNaN(n) ? '---' : String(n);
+        led.textContent = anywhere ? `${anywhere.name} is under ${anywhere.cat}. Switch the filter to All.` : `No ticket ${isNaN(n) ? '' : n}. Tickets run 101 to 114.`;
+        led.parentElement.dataset.state = 'error';
+        return;
+      }
+      rail.goTo(idx);
+    });
+    $('.cv-collect', root).addEventListener('click', () => { const it = rail.items[rail.index()]; it && openPiece(it.g); });
+
+    function openPiece(g) {
+      sheet.open(`
+        <div class="slip">
+          <header class="slip-head"><span>Shop copy</span><span class="slip-no">No. ${g.ticket}</span></header>
+          <div class="slip-grid">
+            <div class="slip-art">${svg(g, { hanger: 'wire', noGuard: true })}</div>
+            <div class="slip-info">
+              <p class="slip-coll">${g.collection}${g.collection === 'TRACE' ? ' · London Fashion Day S7' : ' · AW25-26'}</p>
+              <h2 id="cv-title">${esc(g.name)}</h2>
+              <dl class="slip-fields"><div><dt>Fabric</dt><dd>${g.fabric}</dd></div><div><dt>Category</dt><dd>${g.cat}</dd></div><div><dt>Price</dt><dd>${money(g.price)} <small>sample</small></dd></div></dl>
+              <form class="slip-form" novalidate>${sizeField(g, 'cv-size')}
+                <button class="btn-ink" type="submit" data-autofocus>Add to bag</button>
+              </form>
+              <figure class="slip-look"><img src="${lookPhoto(g)}" alt="Runway look with the ${esc(g.name)}" loading="lazy" width="800" height="1200"><figcaption>On the runway, ${g.collection}</figcaption></figure>
+            </div>
+          </div>
+          <div class="stamp" aria-hidden="true">In bag</div>
+          <p class="slip-status" role="status"></p>
+        </div>`);
+      wireAdd(sheet.body(), g, 'cv-size', size => {
+        const slip = $('.slip', sheet.body());
+        slip.classList.remove('is-stamped'); void slip.offsetWidth; slip.classList.add('is-stamped');
+        $('.slip-status', slip).textContent = `${g.name}, size ${size}, is in your bag.`;
+      });
+    }
+
+    function renderBag() {
+      const lines = bagLines((g, it, i) => `
+        <li class="stub"><span class="stub-no">No. ${g.ticket}</span><span class="stub-name">${esc(g.name)}<small>Size ${it.size}</small></span>
+        <span class="stub-price">${money(g.price)}</span><button type="button" class="stub-x" data-remove="${i}" aria-label="Remove ${esc(g.name)}">${ICON.close}</button></li>`);
+      bagSheet.body().innerHTML = `<header class="bag-head"><h2>Your tickets</h2><p>Customer copies. Keep them until the store opens.</p></header>
+        ${lines ? `<ul class="stubs">${lines}</ul><div class="bag-total"><span>Total, sample prices</span><b>${money(Bag.total())}</b></div>
+        <button class="btn-ink" type="button" disabled>Checkout opens with the store</button>` :
+        `<div class="bag-empty"><p>No tickets yet.</p><p>Pick a piece on the rail, choose a size, and it is stamped into your bag.</p><button type="button" class="btn-line" data-close>Back to the rail</button></div>`}`;
+    }
+    wireBag(bagSheet, renderBag);
+    $$('.js-bag', root).forEach(b => b.addEventListener('click', () => { renderBag(); bagSheet.open(); }));
+    Bag.on(() => $$('.js-bag-count', root).forEach(c => (c.textContent = Bag.count())));
+    $$('.js-bag-count', root).forEach(c => (c.textContent = Bag.count()));
+    wireScrollButtons(root); wireNewsletter(root);
+    return { start() { film.start(); rail.start(); }, stop() { film.stop(); rail.stop(); } };
+  }
+
+  // ================================================================= BACKSTAGE
+  function initBackstage() {
+    const root = $('#view-backstage');
+    const film = Film(root);
+    pastHero(root);
+    const sheet = Sheet($('#backstage-sheet'));
+    const bagSheet = Sheet($('#backstage-bag'));
+    const ro = $('.bs-order', root);
+    const showTime = i => { const s = 19 * 3600 + i * 25; return `${String(Math.floor(s / 3600)).padStart(2, '0')}:${String(Math.floor(s / 60) % 60).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; };
+    let list = CATALOG;
+    const rail = new Rail({
+      viewport: $('.bs-rail', root), track: $('.bs-track', root), stiffness: 26, damping: 0.9,
+      render(g, i) {
+        const li = document.createElement('li');
+        li.className = 'hang'; li.dataset.index = i;
+        const n = String(CATALOG.indexOf(g) + 1).padStart(2, '0');
+        li.innerHTML = `<button type="button" class="hang-btn" aria-label="Look ${n}: ${esc(g.name)}, ${money(g.price)}">
+          ${svg(g, { hanger: 'black' })}
+          <span class="lookcard" aria-hidden="true"><span class="lc-top">KEKA · ${g.collection}</span><b>Look ${n}</b><span class="lc-item">${esc(g.name)}</span></span>
+          <span class="polaroid" aria-hidden="true"><img src="${lookPhoto(g)}" alt="" loading="lazy" width="800" height="1200"></span></button>`;
+        $('button', li).addEventListener('click', () => { rail.goTo(i); openLook(g, n); });
+        return li;
+      },
+      onCenter(g, i) {
+        $$('li', ro).forEach((r, k) => r.toggleAttribute('aria-current', k === i));
+        const r = $$('li', ro)[i];
+        if (r) { // keep the current row visible inside the running order without scrolling the page
+          const top = r.offsetTop - ro.offsetTop, bottom = top + r.offsetHeight;
+          if (top < ro.scrollTop) ro.scrollTop = top;
+          else if (bottom > ro.scrollTop + ro.clientHeight) ro.scrollTop = bottom - ro.clientHeight;
+        }
+      },
+    });
+    function renderOrder() {
+      ro.innerHTML = list.map((g, i) => `<li><button type="button" data-go="${i}"><span class="ro-t">${showTime(CATALOG.indexOf(g))}</span><span class="ro-n">${String(CATALOG.indexOf(g) + 1).padStart(2, '0')}</span><span class="ro-name">${esc(g.name)}</span></button></li>`).join('');
+    }
+    ro.addEventListener('click', e => { const b = e.target.closest('[data-go]'); if (b) rail.goTo(+b.dataset.go); });
+    filterBar($('.bs-filters', root), l => { list = l; renderOrder(); rail.setItems(l); });
+    renderOrder(); rail.setItems(list);
+    $('.bs-prev', root).addEventListener('click', () => rail.nudge(-1));
+    $('.bs-next', root).addEventListener('click', () => rail.nudge(1));
+
+    function openLook(g, n) {
+      sheet.open(`
+        <div class="dress">
+          <div class="dress-photo"><img src="${lookPhoto(g)}" alt="Runway look ${n} with the ${esc(g.name)}" width="800" height="1200"><span class="tape">Look ${n}</span></div>
+          <div class="dress-info">
+            <p class="dress-meta">${g.collection} · ${g.cat}</p>
+            <h2>${esc(g.name)}</h2>
+            <div class="dress-flat">${svg(g, { hanger: 'black' })}</div>
+            <ul class="dress-spec"><li><span>Fabric</span>${g.fabric}</li><li><span>Price</span>${money(g.price)} <small>sample</small></li></ul>
+            <form novalidate>${sizeField(g, 'bs-size')}
+              <button class="btn-card" type="submit" data-autofocus>Add look ${n} to bag</button></form>
+            <p class="dress-status" role="status"></p>
+          </div>
+        </div>`);
+      wireAdd(sheet.body(), g, 'bs-size', size => { $('.dress-status', sheet.body()).textContent = `Checked off: ${g.name}, size ${size}. It's in your bag.`; });
+    }
+    function renderBag() {
+      const lines = bagLines((g, it, i) => `<li class="bs-line"><img src="${lookPhoto(g)}" alt="" width="800" height="1200"><span><b>${esc(g.name)}</b><small>Size ${it.size} · ${money(g.price)}</small></span><button type="button" data-remove="${i}" aria-label="Remove ${esc(g.name)}">${ICON.close}</button></li>`);
+      bagSheet.body().innerHTML = `<header class="bag-head"><h2>Your rail</h2><p>${Bag.count()} ${Bag.count() === 1 ? 'piece' : 'pieces'} pulled for you.</p></header>
+        ${lines ? `<ul class="bs-lines">${lines}</ul><div class="bag-total"><span>Total, sample prices</span><b>${money(Bag.total())}</b></div><button class="btn-card" type="button" disabled>Checkout opens with the store</button>`
+        : `<div class="bag-empty"><p>Nothing pulled yet.</p><p>Open a look on the rail and add it to your bag.</p><button type="button" class="btn-line" data-close>Back to the rail</button></div>`}`;
+    }
+    wireBag(bagSheet, renderBag);
+    $$('.js-bag', root).forEach(b => b.addEventListener('click', () => { renderBag(); bagSheet.open(); }));
+    Bag.on(() => $$('.js-bag-count', root).forEach(c => (c.textContent = Bag.count())));
+    $$('.js-bag-count', root).forEach(c => (c.textContent = Bag.count()));
+    wireScrollButtons(root); wireNewsletter(root);
+    return { start() { film.start(); rail.start(); }, stop() { film.stop(); rail.stop(); } };
+  }
+
+  // ================================================================= SHOWROOM
+  function initShowroom() {
+    const root = $('#view-showroom');
+    const film = Film(root);
+    pastHero(root);
+    const sheet = Sheet($('#showroom-sheet'));
+    const bagSheet = Sheet($('#showroom-bag'));
+    const cap = $('.sr-caption', root);
+    const rail = new Rail({
+      viewport: $('.sr-rail', root), track: $('.sr-track', root), loop: false, stiffness: 22, damping: 0.8,
+      render(g, i) {
+        const li = document.createElement('li');
+        li.className = 'hang'; li.dataset.index = i;
+        li.innerHTML = `<button type="button" class="hang-btn" aria-label="${esc(g.name)}, ${money(g.price)}">${svg(g, { hanger: 'wood' })}</button>`;
+        $('button', li).addEventListener('click', () => { if (rail.index() !== i) rail.goTo(i); openPiece(g); });
+        return li;
+      },
+      onCenter(g, i) {
+        $('.sr-cap-name', cap).textContent = g.name;
+        $('.sr-cap-meta', cap).textContent = `${g.collection} · ${g.fabric} · ${money(g.price)}`;
+        $('.sr-count', root).textContent = `${String(i + 1).padStart(2, '0')} / ${String(rail.items.length).padStart(2, '0')}`;
+      },
+    });
+    filterBar($('.sr-filters', root), l => rail.setItems(l));
+    rail.setItems(CATALOG);
+    rail.goTo(2, true);
+    $('.sr-prev', root).addEventListener('click', () => rail.nudge(-1));
+    $('.sr-next', root).addEventListener('click', () => rail.nudge(1));
+    $('.sr-view', root).addEventListener('click', () => { const it = rail.items[rail.index()]; it && openPiece(it.g); });
+
+    function openPiece(g) {
+      sheet.open(`
+        <div class="pdp">
+          <div class="pdp-media"><div class="pdp-flat">${svg(g, { hanger: 'wood' })}</div><img src="${lookPhoto(g)}" alt="Runway look with the ${esc(g.name)}" width="800" height="1200" loading="lazy"></div>
+          <div class="pdp-info">
+            <p class="pdp-coll">${g.collection}</p>
+            <h2>${esc(g.name)}</h2>
+            <p class="pdp-price">${money(g.price)} <small>Sample price</small></p>
+            <form novalidate>${sizeField(g, 'sr-size')}<button class="btn-solid" type="submit" data-autofocus>Add to bag</button></form>
+            <p class="pdp-status" role="status"></p>
+            <details open><summary>Details</summary><p>${g.fabric}. Shown in the ${g.collection} collection${g.collection === 'TRACE' ? ' at London Fashion Day Season 7, May 2026' : ' at London Fashion Day Season 5, April 2025'}.</p></details>
+            <details><summary>Fit</summary><p>Cut without a gender. Choose your usual size; the size chart arrives with the store.</p></details>
+          </div>
+        </div>`);
+      wireAdd(sheet.body(), g, 'sr-size', size => { $('.pdp-status', sheet.body()).textContent = `Added: ${g.name}, size ${size}.`; });
+    }
+    function renderBag() {
+      const lines = bagLines((g, it, i) => `<li class="sr-line"><div class="sr-line-art">${svg(g, { hanger: 'wood' })}</div><span><b>${esc(g.name)}</b><small>Size ${it.size}</small><small>${money(g.price)}</small></span><button type="button" class="link" data-remove="${i}">Remove</button></li>`);
+      bagSheet.body().innerHTML = `<header class="bag-head"><h2>Bag</h2></header>${lines ? `<ul class="sr-lines">${lines}</ul><div class="bag-total"><span>Subtotal, sample prices</span><b>${money(Bag.total())}</b></div><button class="btn-solid" type="button" disabled>Checkout opens with the store</button>`
+        : `<div class="bag-empty"><p>Your bag is empty.</p><button type="button" class="btn-line" data-close>Continue browsing</button></div>`}`;
+    }
+    wireBag(bagSheet, renderBag);
+    $$('.js-bag', root).forEach(b => b.addEventListener('click', () => { renderBag(); bagSheet.open(); }));
+    Bag.on(() => $$('.js-bag-count', root).forEach(c => (c.textContent = Bag.count())));
+    $$('.js-bag-count', root).forEach(c => (c.textContent = Bag.count()));
+    wireScrollButtons(root); wireNewsletter(root);
+    return { start() { film.start(); rail.start(); }, stop() { film.stop(); rail.stop(); } };
+  }
+
+  // ---------------------------------------------------------------- router
+  const views = { conveyor: initConveyor(), backstage: initBackstage(), showroom: initShowroom() };
+  let current = null;
+  function route() {
+    const id = location.hash.slice(1) in views ? location.hash.slice(1) : 'conveyor';
+    if (id === current) return;
+    if (current) views[current].stop();
+    for (const k in views) $(`#view-${k}`).hidden = k !== id;
+    document.documentElement.dataset.concept = id;
+    $$('.switcher a').forEach(a => a.setAttribute('aria-current', a.getAttribute('href') === '#' + id ? 'page' : 'false'));
+    const first = current !== null;
+    current = id;
+    views[id].start();
+    if (first) scrollTo({ top: 0, behavior: 'auto' });
+  }
+  addEventListener('hashchange', route);
+  route();
+
+  // the concept switcher steps aside while reading down the page and returns on the way up
+  const switcher = $('.switcher');
+  let lastY = scrollY;
+  addEventListener('scroll', () => {
+    const y = scrollY;
+    if (Math.abs(y - lastY) < 6) return;
+    switcher.classList.toggle('is-tucked', y > lastY && y > 200 && !switcher.contains(document.activeElement));
+    lastY = y;
+  }, { passive: true });
+  switcher.addEventListener('focusin', () => switcher.classList.remove('is-tucked'));
+})();
+</script>
+</body>
+</html>
