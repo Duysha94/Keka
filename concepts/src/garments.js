@@ -286,6 +286,13 @@
         <rect x="44" y="52" width="10" height="16" rx="2" fill="var(--hanger-hook, #b08d57)"/><rect x="146" y="52" width="10" height="16" rx="2" fill="var(--hanger-hook, #b08d57)"/>`;
       return hook + `<path d="M100,44 Q60,50 26,70 Q24,76 30,76 Q64,60 100,56 Q136,60 170,76 Q176,76 174,70 Q140,50 100,44 Z" fill="var(--hanger-wood, #7a5536)"/>`;
     },
+    // fine black wire, for the monochrome storefront
+    thin(kind) {
+      const hook = `<path d="M100,50 L100,30 Q100,9 87,9 Q77,9 77,19" fill="none" stroke="var(--hanger, #0a0a0a)" stroke-width="2" stroke-linecap="round"/>`;
+      if (kind === 'bottom') return hook + `<path d="M40,52 L160,52" stroke="var(--hanger, #0a0a0a)" stroke-width="2.4" stroke-linecap="round"/>
+        <path d="M46,52 L46,66 M154,52 L154,66" stroke="var(--hanger, #0a0a0a)" stroke-width="2.4"/>`;
+      return hook + `<path d="M100,48 L30,72 L170,72 Z" fill="none" stroke="var(--hanger, #0a0a0a)" stroke-width="2" stroke-linejoin="round"/>`;
+    },
     black(kind) {
       const hook = `<path d="M100,46 L100,28 Q100,8 86,8 Q76,8 76,18" fill="none" stroke="var(--hanger-hook, #1a1a1a)" stroke-width="2.6" stroke-linecap="round"/>`;
       if (kind === 'bottom') return hook + `<rect x="38" y="46" width="124" height="8" rx="2" fill="var(--hanger-body, #121212)"/>

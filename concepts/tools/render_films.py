@@ -190,6 +190,28 @@ def render_showroom(photos, out, w, h, shots, shot, fade):
         yield apply_vignette(fr, vig)
 
 
+# ---------------------------------------------------------------- lineup
+def render_lineup(photos, out, w, h, names, visible, per):
+    """A runway line-up gliding past at constant speed, natural colour."""
+    n = len(names)
+    fw = w / visible
+    total = n * per
+    vig = vignette(w, h, 0.18)
+    for f in range(int(round(total * FPS))):
+        t = f / FPS
+        offset = (t / per) * fw
+        canvas = Image.new("RGB", (w, h), (12, 12, 12))
+        seam = max(2, round(w / 800))
+        first = math.floor(offset / fw) - 1
+        for i in range(first, first + int(visible) + 3):
+            x = i * fw - offset
+            if x > w or x + fw < 0:
+                continue
+            tile = cover(photos.get(names[i % n]), int(math.ceil(fw)) - seam, h, zoom=1.0, fy=0.45)
+            canvas.paste(tile, (int(round(x)), 0))
+        yield apply_vignette(canvas, vig)
+
+
 def encode(frames, w, h, path, crf):
     cmd = [
         "ffmpeg", "-y", "-loglevel", "error",
@@ -254,6 +276,12 @@ def main():
         jobs += [
             ("showroom-desktop.mp4", 1600, 900, render_showroom(photos, out, 1600, 900, SHOWROOM_DESK, 3.2, 1.1), 26),
             ("showroom-mobile.mp4", 720, 1280, render_showroom(photos, out, 720, 1280, SHOWROOM_MOBILE, 3.2, 1.1), 26),
+        ]
+    if "lineup" in which:
+        line = ["photo-229.jpg", "photo-223.jpg", "DSC02744.jpg", "photo-226.jpg", "photo-209.jpg", "DSC02700.jpg", "photo-212.jpg", "photo-225.jpg", "DSC02672.jpg", "photo-216.jpg"]
+        jobs += [
+            ("lineup-desktop.mp4", 1600, 900, render_lineup(photos, out, 1600, 900, line, 3.3, 2.6), 26),
+            ("lineup-mobile.mp4", 720, 1280, render_lineup(photos, out, 720, 1280, line, 1.25, 2.6), 26),
         ]
     for name, w, h, frames, crf in jobs:
         path = encode(frames, w, h, os.path.join(out, name), crf)
