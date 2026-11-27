@@ -1,0 +1,963 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>KEKA The Rail</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="KEKA on one rail: the runway film, the collections and every piece, hung in order. Compose your look.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300..800&display=swap">
+<style>
+/* KEKA, The Rail. White ground, black type; colour arrives only with the photographs.
+   Layout: one pinned stage. The film fills it, then hangs itself on the rail; vertical scroll
+   carries the rail sideways past collection discs, garments and the brand's hang-tag. */
+:root {
+  --paper: #ffffff; --ink: #0a0a0a; --ink2: #5c5c5c; --line: #e2e2e2; --mist: #f4f4f4;
+  --font: 'Geist', 'Helvetica Neue', Arial, sans-serif;
+  --gutter: clamp(16px, 2.6vw, 40px);
+  --ease: cubic-bezier(.16, 1, .3, 1);
+  --hanger: #0a0a0a;
+  color-scheme: light;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 400 16px/1.6 var(--font); overflow-x: hidden; }
+img, svg, video { display: block; max-width: 100%; }
+img { height: auto; }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+a { color: inherit; }
+[hidden] { display: none !important; }
+::selection { background: var(--ink); color: var(--paper); }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+.vh { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.btn { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 22px; border: 1px solid var(--ink); background: var(--ink); color: var(--paper);
+  font: 500 13px/1 var(--font); letter-spacing: .02em; white-space: nowrap; transition: background .3s var(--ease), color .3s var(--ease); }
+.btn:hover { background: var(--paper); color: var(--ink); }
+.btn-ghost { background: var(--paper); color: var(--ink); }
+.btn-ghost:hover { background: var(--ink); color: var(--paper); }
+.btn-wide { width: 100%; min-height: 54px; }
+.btn:active { transform: translateY(1px); }
+.link { border: 0; background: none; padding: 0; text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1px; }
+
+/* header: inverts over the film, black on the white rail */
+.top { position: fixed; z-index: 30; top: 0; left: 0; right: 0; display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: calc(14px + env(safe-area-inset-top, 0px)) max(var(--gutter), env(safe-area-inset-right, 0px)) 14px max(var(--gutter), env(safe-area-inset-left, 0px));
+  color: #fff; mix-blend-mode: difference; pointer-events: none; }
+.top > * { pointer-events: auto; }
+.top .logo { width: 46px; height: 46px; display: block; }
+.top .logo img { width: 100%; height: 100%; object-fit: contain; }
+.top nav { display: flex; gap: 22px; }
+.top nav button { border: 0; background: none; padding: 8px 0; font: 500 14px/1 var(--font); }
+.top nav button:hover { text-decoration: underline; text-underline-offset: 5px; }
+.top :focus-visible { outline-color: #fff; }
+
+/* the stage */
+.stage-wrap { position: relative; }
+.stage { --w: 232px; --gap: 40px; --rail-y: 15; --lead: max(var(--gutter), env(safe-area-inset-left, 0px)); --p: 0;
+  position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden; background: var(--paper); }
+@media (max-width: 700px) { .stage { --w: 136px; --gap: 22px; --rail-y: 14; } }
+@media (max-height: 760px) and (min-width: 701px) { .stage { --w: 196px; --rail-y: 13; } }
+.rail-viewport { position: absolute; inset: 0; overflow: hidden; touch-action: pan-y; }
+.rod { position: absolute; left: 0; right: 0; top: calc(var(--rail-y) * 1svh + var(--w) * .045); height: 2px; background: var(--ink); opacity: calc(var(--p) * 1.2 - .1); }
+.track { position: absolute; left: 0; top: 0; margin: 0; padding: 0; list-style: none; will-change: transform; }
+.item { position: absolute; top: 0; }
+.swing { transform-origin: 50% 2%; }
+.item-film .film-slot { display: block; width: 100%; aspect-ratio: 3 / 5; margin-top: calc(var(--w) * -0.16); }
+.hanger-wrap { display: block; opacity: var(--p); }
+.hanger { position: relative; z-index: 2; width: 100%; height: auto; }
+.hang { display: block; width: 100%; padding: 0; border: 0; background: none; -webkit-tap-highlight-color: transparent; }
+.hang img { position: relative; z-index: 1; width: 100%; aspect-ratio: 3 / 5; object-fit: cover; margin-top: calc(var(--w) * -0.16); pointer-events: none; -webkit-user-drag: none;
+  transition: transform .6s var(--ease), filter .6s var(--ease); }
+.hang:hover img, .hang:focus-visible img { transform: translateY(-8px); }
+.hang:focus-visible { outline: none; }
+.hang:focus-visible img { outline: 2px solid var(--ink); outline-offset: 4px; }
+/* collection discs, like size dividers on a shop rail */
+.disc { position: relative; display: grid; place-items: center; align-content: center; gap: 6px; width: 100%; aspect-ratio: 1; margin-top: calc(var(--w) * .02); padding: 18% 10% 10%;
+  border: 1.5px solid var(--ink); border-radius: 50%; background: var(--paper); text-align: center; }
+.disc-hole { position: absolute; top: 6%; left: 50%; width: 22%; aspect-ratio: 1; transform: translateX(-50%); border: 1.5px solid var(--ink); border-radius: 50%; background: var(--paper); }
+.disc b { font: 700 clamp(22px, calc(var(--w) * .16), 40px)/.95 var(--font); letter-spacing: -.03em; text-transform: uppercase; }
+.disc span:last-child { font: 400 12px/1.2 var(--font); color: var(--ink2); }
+.disc:hover { background: var(--ink); color: var(--paper); } .disc:hover span:last-child { color: #bdbdbd; } .disc:hover .disc-hole { background: var(--ink); border-color: var(--paper); }
+/* the brand's hang-tag */
+.hangtag { position: relative; margin-top: calc(var(--w) * .1); padding: calc(var(--w) * .2) calc(var(--w) * .14) calc(var(--w) * .14); border: 1.5px solid var(--ink); background: var(--paper); }
+.hangtag::before { content: ""; position: absolute; left: 50%; top: calc(var(--w) * -.12); height: calc(var(--w) * .2); border-left: 1.5px solid var(--ink); }
+.tag-hole { position: absolute; top: calc(var(--w) * .05); left: 50%; width: 14px; height: 14px; transform: translateX(-50%); border: 1.5px solid var(--ink); border-radius: 50%; }
+.hangtag p { margin: 0 0 14px; font-size: clamp(13px, calc(var(--w) * .07), 16px); color: #333; max-width: 42ch; }
+.hangtag .tag-big { font: 600 clamp(24px, calc(var(--w) * .16), 44px)/1 var(--font); letter-spacing: -.03em; color: var(--ink); }
+.hangtag .tag-sign { margin: 18px 0 0; font: 700 13px/1 var(--font); letter-spacing: .3em; }
+.endcard { margin-top: calc(var(--w) * .3); display: grid; gap: 10px; }
+.endcard p { margin: 0 0 6px; font: 600 clamp(20px, calc(var(--w) * .12), 30px)/1.05 var(--font); letter-spacing: -.02em; }
+
+/* the film, which hangs itself on the rail */
+.film { position: absolute; z-index: 5; left: 0; top: 0; width: 100%; height: 100%; overflow: hidden; background: #111; transform-origin: 50% calc(var(--w) * -0.29); will-change: transform, width, height; }
+.film video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.film::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,0) 26%, rgba(0,0,0,0) 50%, rgba(0,0,0,.55)); opacity: calc(1 - var(--p) * 1.6); pointer-events: none; }
+.film-copy { position: absolute; z-index: 6; left: max(var(--gutter), env(safe-area-inset-left, 0px)); right: var(--gutter); bottom: clamp(36px, 7vh, 72px); color: #fff;
+  opacity: calc(1 - var(--p) * 2.2); transform: translateY(calc(var(--p) * -40px)); }
+.stage.is-hung .film-copy, .stage.is-hung .film-btn { visibility: hidden; }
+.film-copy h1 { margin: 0 0 22px; font: 600 clamp(40px, 6.6vw, 112px)/.92 var(--font); letter-spacing: -.045em; text-wrap: balance; }
+.film-copy .btn { background: #fff; color: var(--ink); border-color: #fff; }
+.film-copy .btn:hover { background: transparent; color: #fff; }
+.film-copy :focus-visible, .film-btn:focus-visible { outline-color: #fff; }
+.film-btn { position: absolute; z-index: 7; right: max(var(--gutter), env(safe-area-inset-right, 0px)); bottom: clamp(36px, 7vh, 72px); width: 44px; height: 44px; display: grid; place-items: center;
+  border: 1px solid rgba(255,255,255,.7); background: none; color: #fff; opacity: calc(1 - var(--p) * 2.2); }
+.film-btn svg { width: 14px; height: 14px; }
+.film-btn .i-play, .film-btn[aria-pressed="true"] .i-pause { display: none; }
+.film-btn[aria-pressed="true"] .i-play { display: block; }
+@media (max-width: 700px) { .film-btn { bottom: auto; top: calc(80px + env(safe-area-inset-top, 0px)); } }
+
+/* what hangs at the centre line */
+.centre { position: absolute; left: 50%; top: calc(var(--rail-y) * 1svh - 14px); width: 0; height: 10px; border-left: 1.5px solid var(--ink); opacity: calc(var(--p) * 2 - 1); }
+.readout { position: absolute; left: max(var(--gutter), env(safe-area-inset-left, 0px)); right: max(var(--gutter), env(safe-area-inset-right, 0px));
+  top: calc(var(--rail-y) * 1svh + var(--w) * 1.96 + clamp(20px, 3.4svh, 40px)); display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px 40px; align-items: end;
+  opacity: calc(var(--p) * 2.5 - 1.5); }
+.readout.is-empty { visibility: hidden; }
+.ro-name { margin: 0; grid-column: 1 / -1; font: 600 clamp(34px, 6.4vw, 104px)/.9 var(--font); letter-spacing: -.045em; text-wrap: balance; }
+.ro-meta { display: flex; flex-wrap: wrap; gap: 6px 22px; color: var(--ink2); font-size: 15px; }
+.ro-meta span:first-child { color: var(--ink); }
+.ro-meta em { font-style: normal; color: var(--ink2); font-size: 13px; }
+.ro-actions { display: flex; gap: 8px; justify-self: end; }
+.ro-text { margin: 0; max-width: 52ch; color: #333; font-size: 15px; text-align: right; }
+.readout.flip .ro-name { animation: flip .55s var(--ease); }
+@keyframes flip { from { opacity: 0; transform: translateY(14px); } }
+@media (max-width: 700px) {
+  .readout { grid-template-columns: 1fr; gap: 10px; }
+  .ro-actions { justify-self: start; } .ro-actions .btn { flex: 1; }
+  .ro-text { text-align: left; font-size: 14px; }
+  .ro-meta { font-size: 14px; }
+}
+.foot-of-stage { position: absolute; left: max(var(--gutter), env(safe-area-inset-left, 0px)); right: max(var(--gutter), env(safe-area-inset-right, 0px)); bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  display: flex; align-items: center; gap: 24px; opacity: calc(var(--p) * 2 - 1); }
+.pos { position: relative; flex: 1; height: 1px; background: var(--line); }
+.pos i { position: absolute; inset: 0; background: var(--ink); transform-origin: 0 50%; transform: scaleX(0); }
+.jumps { display: flex; gap: 18px; }
+.jumps button { border: 0; background: none; padding: 6px 0; font: 500 13px/1 var(--font); color: var(--ink2); }
+.jumps button:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 4px; }
+@media (max-width: 700px) { .foot-of-stage { bottom: calc(10px + env(safe-area-inset-bottom, 0px)); } .jumps { display: none; } .ro-name { font-size: clamp(30px, 9vw, 40px); } .ro-actions .btn { min-height: 44px; } }
+
+/* reduced motion: no pin, no film flight; the rail scrolls sideways by itself */
+.rm .stage { position: relative; height: auto; overflow: visible; }
+.rm .film { position: relative; width: 100% !important; height: 100svh !important; transform: none !important; }
+.rm .film-copy { position: absolute; opacity: 1; transform: none; }
+.rm .rail-viewport { position: relative; height: calc(var(--w) * 2.2 + 60px); overflow-x: auto; }
+.rm .rod, .rm .hanger-wrap { opacity: 1; }
+.rm .item-film { display: none; }
+.rm .readout, .rm .centre, .rm .foot-of-stage { position: relative; inset: auto; top: auto; left: auto; right: auto; bottom: auto; opacity: 1; margin: 20px var(--gutter); }
+
+/* the look bar */
+.lookbar { position: fixed; z-index: 25; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); display: flex; align-items: center; gap: 14px;
+  padding: 8px 8px 8px 10px; background: var(--paper); border: 1px solid var(--ink); box-shadow: 0 10px 30px -12px rgba(10,10,10,.35); max-width: calc(100% - 24px);
+  animation: bar .5s var(--ease); }
+@keyframes bar { from { opacity: 0; transform: translate(-50%, 20px); } }
+.lookbar-thumbs { display: flex; }
+.lookbar-thumbs img { width: 30px; height: 50px; object-fit: cover; margin-left: -8px; border: 2px solid var(--paper); }
+.lookbar-thumbs img:first-child { margin-left: 0; }
+.lookbar-sum { font-size: 14px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.lookbar .btn { min-height: 40px; padding: 0 16px; }
+
+/* coda */
+.coda { padding: clamp(96px, 12vw, 180px) max(var(--gutter), env(safe-area-inset-right, 0px)) calc(48px + env(safe-area-inset-bottom, 0px)) max(var(--gutter), env(safe-area-inset-left, 0px)); border-top: 1px solid var(--line); }
+.coda blockquote { margin: 0; max-width: 22ch; font: 500 clamp(30px, 4.4vw, 72px)/1.04 var(--font); letter-spacing: -.035em; text-wrap: balance; }
+.coda cite { display: block; margin-top: 22px; font: 400 15px/1.4 var(--font); font-style: normal; color: var(--ink2); }
+.coda cite b { color: var(--ink); font-weight: 500; }
+.coda-grid { display: grid; gap: 40px; margin-top: clamp(64px, 8vw, 120px); padding-top: 28px; border-top: 1px solid var(--ink); }
+@media (min-width: 900px) { .coda-grid { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr); } }
+.coda h2 { margin: 0 0 12px; font: 600 15px/1.2 var(--font); }
+.coda p { margin: 0 0 14px; color: var(--ink2); font-size: 15px; max-width: 44ch; }
+.coda label { display: block; font-size: 13px; color: var(--ink2); margin-bottom: 6px; }
+.row { display: flex; gap: 8px; max-width: 480px; }
+.row input { flex: 1; min-width: 0; height: 48px; padding: 0 14px; border: 1px solid var(--ink); background: var(--paper); font-size: 16px; }
+.row input::placeholder { color: #767676; }
+.coda-status, .notify-status { min-height: 1.4em; margin: 10px 0 0 !important; font-size: 14px; color: var(--ink) !important; }
+[data-state="error"] { color: #b3261e !important; }
+.coda ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.coda ul a { text-decoration: none; font-size: 15px; } .coda ul a:hover { text-decoration: underline; text-underline-offset: 4px; }
+.legal { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px 30px; margin-top: 72px; font-size: 13px; color: var(--ink2); }
+.legal p { margin: 0; max-width: 80ch; }
+
+/* dialogs */
+dialog { padding: 0; border: 0; background: var(--paper); color: var(--ink); max-width: 100%; max-height: 100%; }
+dialog::backdrop { background: rgba(10,10,10,.4); }
+dialog[open] { animation: dlg-in .5s var(--ease); }
+dialog.is-closing { animation: dlg-out .3s cubic-bezier(.7, 0, .84, 0) forwards; }
+@keyframes dlg-in { from { opacity: 0; transform: translateY(24px); } }
+@keyframes dlg-out { to { opacity: 0; transform: translateY(24px); } }
+.dlg-close { position: absolute; z-index: 3; top: calc(12px + env(safe-area-inset-top, 0px)); right: max(12px, env(safe-area-inset-right, 0px)); width: 46px; height: 46px; display: grid; place-items: center; border: 1px solid var(--ink); background: var(--paper); }
+.dlg-close svg { width: 18px; height: 18px; }
+.dlg-body { height: 100%; overflow-y: auto; overscroll-behavior: contain; }
+#fit, #index { width: 100%; height: 100%; margin: 0; }
+.fit { display: grid; min-height: 100%; }
+@media (min-width: 900px) { .fit { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); } }
+.fit-photo { margin: 0; background: var(--mist); display: grid; place-items: center; }
+.fit-photo img { width: 100%; max-height: 100svh; object-fit: contain; aspect-ratio: 2 / 3; }
+@media (min-width: 900px) { .fit-photo { position: sticky; top: 0; height: 100svh; } .fit-photo img { height: 100%; width: auto; } }
+.fit-info { padding: calc(40px + env(safe-area-inset-top, 0px)) max(var(--gutter), env(safe-area-inset-right, 0px)) calc(48px + env(safe-area-inset-bottom, 0px)) max(var(--gutter), env(safe-area-inset-left, 0px)); max-width: 640px; }
+.fit-info h2 { margin: 0 60px 10px 0; font: 600 clamp(34px, 4.6vw, 72px)/.92 var(--font); letter-spacing: -.045em; text-wrap: balance; }
+.fit-price { margin: 0 0 32px; font-size: 20px; font-variant-numeric: tabular-nums; }
+.fit-price em { font-style: normal; font-size: 13px; color: var(--ink2); margin-left: 6px; }
+.fit-form { display: grid; gap: 14px; }
+.fit-form fieldset { border: 0; margin: 0; padding: 0; }
+.fit-form legend { margin-bottom: 10px; font-size: 13px; color: var(--ink2); }
+.sizes { display: flex; flex-wrap: wrap; gap: 6px; }
+.size { position: relative; }
+.size input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.size span { display: grid; place-items: center; min-width: 56px; height: 48px; padding: 0 12px; border: 1px solid var(--line); font-size: 15px; }
+.size input:hover + span { border-color: var(--ink); }
+.size input:checked + span { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.size input:focus-visible + span { outline: 2px solid var(--ink); outline-offset: 2px; }
+.fit-error { margin: 0; color: #b3261e; font-size: 14px; }
+.fit-status { margin: 0; min-height: 1.4em; font-size: 14px; }
+.fit-facts { margin: 32px 0 0; border-top: 1px solid var(--line); }
+.fit-facts div { display: grid; grid-template-columns: 6rem minmax(0, 1fr); gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
+.fit-facts dt { color: var(--ink2); } .fit-facts dd { margin: 0; }
+.fit-with { margin: 40px 0 14px; font-weight: 600; }
+.pairs { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.pair { display: grid; gap: 4px; width: 100%; padding: 0; border: 0; background: none; text-align: left; font-size: 13px; }
+.pair img { width: 100%; aspect-ratio: 3 / 5; object-fit: cover; transition: opacity .3s; }
+.pair:hover img { opacity: .85; }
+.pair span:last-child { color: var(--ink2); }
+#look { margin: 0 0 0 auto; width: min(560px, 100%); height: 100%; }
+#look .dlg-body { padding: calc(28px + env(safe-area-inset-top, 0px)) 24px calc(32px + env(safe-area-inset-bottom, 0px)); }
+.look-title, .ix-title { margin: 0 60px 28px 0; font: 600 clamp(34px, 4vw, 56px)/.95 var(--font); letter-spacing: -.045em; }
+.look-row { list-style: none; margin: 0; padding: 0 0 8px; display: grid; grid-auto-flow: column; grid-auto-columns: 42%; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; }
+.look-row li { display: grid; gap: 2px; scroll-snap-align: start; font-size: 14px; }
+.look-row img { width: 100%; aspect-ratio: 3 / 5; object-fit: cover; margin-bottom: 8px; }
+.look-row span { color: var(--ink2); }
+.look-row .link { justify-self: start; font-size: 13px; margin-top: 4px; }
+.look-total { display: flex; justify-content: space-between; padding: 20px 0; margin-top: 12px; border-top: 1px solid var(--ink); }
+.look-total b { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.look-empty { color: var(--ink2); }
+.notify { margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--line); }
+.notify p { margin: 0 0 14px; font-size: 15px; }
+.notify label { display: block; font-size: 13px; color: var(--ink2); margin-bottom: 6px; }
+#index .dlg-body { padding: calc(32px + env(safe-area-inset-top, 0px)) max(var(--gutter), env(safe-area-inset-right, 0px)) calc(48px + env(safe-area-inset-bottom, 0px)) max(var(--gutter), env(safe-area-inset-left, 0px)); }
+#index section { margin-bottom: 48px; }
+#index h3 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 20px; margin: 0 0 8px; padding-bottom: 12px; border-bottom: 1px solid var(--ink); font: 600 clamp(28px, 3vw, 44px)/1 var(--font); letter-spacing: -.035em; }
+#index h3 span { font: 400 14px/1.3 var(--font); letter-spacing: 0; color: var(--ink2); }
+#index ul { list-style: none; margin: 0; padding: 0; }
+#index li button { width: 100%; display: grid; grid-template-columns: 44px minmax(0, 1fr) auto auto; gap: 18px; align-items: center; padding: 10px 0; border: 0; border-bottom: 1px solid var(--line); background: none; text-align: left; }
+#index li img { width: 44px; height: 72px; object-fit: cover; }
+.ix-name { font: 500 clamp(18px, 1.8vw, 26px)/1.1 var(--font); letter-spacing: -.02em; }
+.ix-cat { color: var(--ink2); font-size: 14px; }
+.ix-price { font-size: 15px; font-variant-numeric: tabular-nums; min-width: 4.5rem; text-align: right; }
+#index li button:hover .ix-name { text-decoration: underline; text-underline-offset: 5px; text-decoration-thickness: 1px; }
+@media (max-width: 600px) { #index li button { grid-template-columns: 44px minmax(0, 1fr) auto; } .ix-cat { display: none; } }
+.ix-note { color: var(--ink2); font-size: 14px; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="logo" href="#rail" aria-label="KEKA"><img src="media/keka-logo-light.png" alt="KEKA" width="640" height="640"></a>
+  <nav aria-label="KEKA">
+    <button type="button" class="js-open-index">Index</button>
+    <button type="button" class="js-open-look">Your look (<span class="js-n">0</span>)</button>
+  </nav>
+</header>
+
+<main>
+  <section class="stage-wrap" id="rail" aria-label="The KEKA rail">
+    <div class="stage">
+      <div class="rail-viewport">
+        <div class="rod" aria-hidden="true"></div>
+        <ul class="track" aria-label="Rail, in order: film, TRACE, Tudor, KEKA"></ul>
+      </div>
+      <span class="centre" aria-hidden="true"></span>
+      <div class="film" aria-hidden="true"><video muted loop playsinline preload="auto" poster="media/lineup-desktop.jpg"></video></div>
+      <div class="film-copy">
+        <h1>Fashion as identity. Form as freedom.</h1>
+        <button type="button" class="btn enter">Enter the rail</button>
+      </div>
+      <button type="button" class="film-btn" aria-pressed="false"><svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2h3v12H4zM9 2h3v12H9z" fill="currentColor"/></svg><svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2l10 6-10 6z" fill="currentColor"/></svg><span class="vh">Pause film</span></button>
+      <div class="readout is-empty" aria-live="polite">
+        <p class="ro-name"></p>
+        <div class="ro-meta"></div>
+        <div class="ro-actions"></div>
+      </div>
+      <div class="foot-of-stage">
+        <div class="pos" aria-hidden="true"><i></i></div>
+        <div class="jumps" role="group" aria-label="Jump along the rail"><button type="button" class="jump" data-jump="TRACE">TRACE</button><button type="button" class="jump" data-jump="Tudor">Tudor</button><button type="button" class="jump" data-jump="tag">KEKA</button></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="coda" aria-labelledby="coda-quote">
+    <blockquote id="coda-quote">Clothes are your protection and your way of speaking without words.</blockquote>
+    <cite><b>Kostiantyn Lieontiev</b>, designer of KEKA and founder of London Fashion Day</cite>
+    <div class="coda-grid">
+      <form novalidate>
+        <h2>Letters from KEKA</h2>
+        <p>New collections, runway dates and the store opening.</p>
+        <label for="c-email">Email address</label>
+        <div class="row"><input id="c-email" type="email" required autocomplete="email" placeholder="name@example.com"><button type="submit" class="btn">Subscribe</button></div>
+        <p class="coda-status" role="status"></p>
+      </form>
+      <div>
+        <h2>Follow</h2>
+        <ul><li><a href="https://www.instagram.com/keka_fashion/" target="_blank" rel="noopener">Instagram</a></li><li><a href="https://www.facebook.com/kekabrand" target="_blank" rel="noopener">Facebook</a></li></ul>
+      </div>
+      <div>
+        <h2>KEKA</h2>
+        <ul><li><a href="https://keka.design/contact/" target="_blank" rel="noopener">Contact</a></li><li><a href="https://keka.design/privacy-policy/" target="_blank" rel="noopener">Privacy policy</a></li></ul>
+      </div>
+    </div>
+    <div class="legal"><p>© 2026 KEKA</p><p>Concept prototype. Runway photography from keka.design (Tudor by tomash.ph). Product names, fabrics and prices are samples.</p></div>
+  </section>
+</main>
+
+<div class="lookbar" hidden><span class="lookbar-thumbs"></span><span class="lookbar-sum"></span><button type="button" class="btn js-open-look">See your look</button></div>
+
+<dialog id="fit" aria-labelledby="fit-title"><button type="button" class="dlg-close" data-close aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button><div class="dlg-body"></div></dialog>
+<dialog id="look" aria-labelledby="look-title"><button type="button" class="dlg-close" data-close aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button><div class="dlg-body"></div></dialog>
+<dialog id="index" aria-labelledby="ix-title"><button type="button" class="dlg-close" data-close aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button><div class="dlg-body"></div></dialog>
+
+<script>/* KEKA garment flats.
+   Technical flats drawn from TRACE (2026) and Tudor (AW25-26) runway looks.
+   Each garment renders into a 200 x 420 viewBox; the hanger hook tip sits at (100, 4)
+   and the shoulder line at y ~ 56. */
+(function () {
+  const W = 200, CX = 100;
+
+  // --- path helpers --------------------------------------------------------
+  // A half-outline is a list of points on the LEFT side, from the top centre,
+  // down and around to the bottom centre. A point is [x, y] or
+  // ['q', cx, cy, x, y] (quadratic curve from the previous point).
+  function mx(x) { return 2 * CX - x; }
+  function sym(half) {
+    const pts = half.map(p => (p[0] === 'q' ? p : ['l', p[0], p[1]]));
+    let d = `M${pts[0][1]},${pts[0][2]}`;
+    for (let i = 1; i < pts.length; i++) {
+      const p = pts[i];
+      d += p[0] === 'q' ? ` Q${p[1]},${p[2]} ${p[3]},${p[4]}` : ` L${p[1]},${p[2]}`;
+    }
+    // walk back up the mirrored side
+    for (let i = pts.length - 1; i > 0; i--) {
+      const p = pts[i], prev = pts[i - 1];
+      const px = prev[0] === 'q' ? prev[3] : prev[1];
+      const py = prev[0] === 'q' ? prev[4] : prev[2];
+      d += p[0] === 'q' ? ` Q${mx(p[1])},${p[2]} ${mx(px)},${py}` : ` L${mx(px)},${py}`;
+    }
+    return d + ' Z';
+  }
+  function both(fn) { return fn(false) + fn(true); }
+  const X = (x, m) => (m ? mx(x) : x);
+
+  function shade(hex, k) {
+    const n = parseInt(hex.slice(1), 16);
+    let r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+    const f = c => Math.max(0, Math.min(255, Math.round(k < 0 ? c * (1 + k) : c + (255 - c) * k)));
+    return '#' + [f(r), f(g), f(b)].map(v => v.toString(16).padStart(2, '0')).join('');
+  }
+
+  // --- patterns --------------------------------------------------------------
+  function patternDefs(id, g) {
+    const c = g.color, line = g.line;
+    switch (g.pattern) {
+      case 'tartan':
+        return `<pattern id="${id}" width="28" height="28" patternUnits="userSpaceOnUse">
+          <rect width="28" height="28" fill="${c}"/>
+          <rect y="9" width="28" height="7" fill="${g.c2}" opacity=".55"/>
+          <rect x="9" width="7" height="28" fill="${g.c2}" opacity=".55"/>
+          <rect y="21" width="28" height="1.2" fill="${g.c3}" opacity=".9"/>
+          <rect x="21" width="1.2" height="28" fill="${g.c3}" opacity=".9"/>
+          <rect y="3" width="28" height="2" fill="${shade(c, -0.35)}" opacity=".6"/>
+          <rect x="3" width="2" height="28" fill="${shade(c, -0.35)}" opacity=".6"/>
+        </pattern>`;
+      case 'pinstripe':
+        return `<pattern id="${id}" width="7" height="10" patternUnits="userSpaceOnUse">
+          <rect width="7" height="10" fill="${c}"/><rect x="3" width=".9" height="10" fill="${g.c2}" opacity=".8"/></pattern>`;
+      case 'check':
+        return `<pattern id="${id}" width="8" height="8" patternUnits="userSpaceOnUse">
+          <rect width="8" height="8" fill="${c}"/><rect width="4" height="4" fill="${g.c2}" opacity=".45"/>
+          <rect x="4" y="4" width="4" height="4" fill="${g.c2}" opacity=".45"/></pattern>`;
+      case 'sequin':
+        return `<pattern id="${id}" width="6" height="5.2" patternUnits="userSpaceOnUse">
+          <rect width="6" height="5.2" fill="${c}"/><circle cx="1.5" cy="1.3" r="1.25" fill="${g.c2}"/>
+          <circle cx="4.5" cy="3.9" r="1.25" fill="${g.c2}"/><circle cx="1.1" cy="1" r=".4" fill="#fff" opacity=".55"/>
+          <circle cx="4.1" cy="3.6" r=".4" fill="#fff" opacity=".55"/></pattern>`;
+      case 'corset':
+        return `<pattern id="${id}" width="26" height="20" patternUnits="userSpaceOnUse">
+          <rect width="26" height="20" fill="${c}"/><path d="M0 0 L26 20 M26 0 L0 20" stroke="${g.c3}" stroke-width=".5" opacity=".7"/></pattern>`;
+      default:
+        return '';
+    }
+  }
+
+  // --- building blocks -----------------------------------------------------
+  // Jacket / coat / shirt outline from a few proportions.
+  function topOutline(o) {
+    const ny = o.neckY ?? 50;
+    const sh = [CX - o.shoulder, ny + (o.drop ?? 12)];
+    const sleeveTopOut = [sh[0] - (o.capOut ?? 6), sh[1] + 12];
+    const cuffOut = [CX - o.shoulder - o.spread, o.sleeveEnd];
+    const cuffIn = [cuffOut[0] + o.cuff, o.sleeveEnd + 2];
+    const arm = [CX - o.body, o.armY];
+    const half = [
+      [CX, ny + (o.backNeck ?? 2)],
+      [CX - o.neck, ny - 2],
+      sh,
+      sleeveTopOut,
+    ];
+    if (o.balloon) half.push(['q', cuffOut[0] - o.balloon, (sleeveTopOut[1] + cuffOut[1]) / 2, cuffOut[0], cuffOut[1]]);
+    else half.push(cuffOut);
+    half.push(cuffIn);
+    if (o.balloon) half.push(['q', cuffIn[0] + o.balloon * 0.2, (cuffIn[1] + arm[1]) / 2 + 10, arm[0], arm[1]]);
+    else half.push(arm);
+    if (o.waistY) half.push([CX - o.waist, o.waistY]);
+    half.push([CX - o.hem, o.hemY]);
+    if (o.hemCurve) half.push(['q', CX - o.hem * 0.5, o.hemY + o.hemCurve, CX, o.hemY + o.hemCurve * 0.6]);
+    else half.push([CX, o.hemY + (o.hemDip ?? 2)]);
+    return { d: sym(half), cuffOut, cuffIn, arm, sh, ny };
+  }
+
+  function buttons(xs, ys, r, fill, stroke) {
+    let s = '';
+    for (const y of ys) for (const x of xs) s += `<circle cx="${x}" cy="${y}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width=".8"/>`;
+    return s;
+  }
+  function cuffLine(t, line, offset = 14) {
+    return both(m => {
+      const a = t.cuffOut, b = t.cuffIn;
+      return `<path d="M${X(a[0] + 1, m)},${a[1] - offset} L${X(b[0] + 1, m)},${b[1] - offset}" stroke="${line}" fill="none"/>`;
+    });
+  }
+
+  // --- garments --------------------------------------------------------------
+  const DRAW = {
+    trench(g, F) {
+      const t = topOutline({ neck: 16, shoulder: 60, drop: 13, spread: 12, sleeveEnd: 262, cuff: 28, body: 47, armY: 118, waist: 47, waistY: 196, hem: 66, hemY: 398, hemDip: 2 });
+      const L = g.line;
+      const lapel = both(m => `<path d="M${X(84, m)},48 L${X(58, m)},70 L${X(66, m)},82 L${X(58, m)},96 L${X(m ? 88 : 112, m)},${m ? 156 : 150}" fill="${F}" stroke="${L}"/>`);
+      return `<path d="${t.d}" fill="${F}" stroke="${L}"/>
+        <path d="M112,150 L112,398" stroke="${L}" fill="none"/>
+        ${lapel}
+        <path d="M100,52 L84,48 L100,64 L116,48 Z" fill="${shade(g.color, -0.25)}" stroke="${L}"/>
+        ${both(m => `<path d="M${X(62, m)},66 L${X(44, m)},72 L${X(46, m)},80 L${X(64, m)},74 Z" fill="${F}" stroke="${L}"/>`)}
+        ${cuffLine(t, L, 22)}
+        <rect x="${CX - 50}" y="186" width="100" height="14" fill="${F}" stroke="${L}"/>
+        <rect x="70" y="183" width="16" height="20" rx="1.5" fill="none" stroke="${g.hardware || L}" stroke-width="2"/>
+        <path d="M150,193 Q166,210 158,236" stroke="${L}" fill="${F}" stroke-width="7" stroke-linecap="round" opacity=".9"/>
+        ${buttons([92, 132], [116, 140, 166], 3.2, g.hardware || shade(g.color, -0.4), L)}
+        ${both(m => `<path d="M${X(60, m)},248 L${X(70, m)},300" stroke="${L}" fill="none"/>`)}
+        <path d="M100,212 L100,398" stroke="${L}" opacity=".5" stroke-dasharray="3 3" fill="none"/>`;
+    },
+    coat(g, F) { // double-breasted long coat, peak lapels
+      const t = topOutline({ neck: 15, shoulder: 58, drop: 10, spread: 10, sleeveEnd: 258, cuff: 28, body: 46, armY: 116, waist: 46, waistY: 200, hem: 58, hemY: 394 });
+      const L = g.line;
+      const lapel = both(m => `<path d="M${X(85, m)},47 L${X(56, m)},74 L${X(48, m)},70 L${X(56, m)},94 L${X(m ? 90 : 110, m)},${m ? 172 : 168}" fill="${F}" stroke="${L}"/>`);
+      return `<path d="${t.d}" fill="${F}" stroke="${L}"/>
+        <path d="M100,52 L85,47 L100,62 L115,47 Z" fill="${shade(g.color, -0.3)}" stroke="${L}"/>
+        ${lapel}
+        <path d="M110,168 L110,394" stroke="${L}" fill="none"/>
+        ${buttons([86, 128], [180, 216, 252], 3.4, shade(g.color, -0.45), L)}
+        ${both(m => `<path d="M${X(52, m)},262 L${X(82, m)},262" stroke="${L}" fill="none"/><path d="M${X(52, m)},262 L${X(52, m)},268 L${X(82, m)},268 L${X(82, m)},262" fill="${F}" stroke="${L}"/>`)}
+        ${cuffLine(t, L, 18)}`;
+    },
+    jacket(g, F) { // tailored, double-breasted, slightly cropped
+      const len = g.cropped ? 214 : 246;
+      const t = topOutline({ neck: 15, shoulder: g.cropped ? 62 : 58, drop: 9, spread: 8, sleeveEnd: g.cropped ? 252 : 250, cuff: 27, body: 47, armY: 116, waist: 45, waistY: 180, hem: 49, hemY: len });
+      const L = g.line;
+      const collar = g.cropped
+        ? both(m => `<path d="M${X(84, m)},47 L${X(48, m)},70 L${X(46, m)},96 L${X(m ? 92 : 108, m)},134" fill="${F}" stroke="${L}"/>`)
+        : both(m => `<path d="M${X(85, m)},47 L${X(60, m)},72 L${X(68, m)},80 L${X(58, m)},92 L${X(m ? 92 : 108, m)},${m ? 150 : 146}" fill="${F}" stroke="${L}"/>`);
+      return `<path d="${t.d}" fill="${F}" stroke="${L}"/>
+        <path d="M100,52 L85,47 L100,62 L115,47 Z" fill="${shade(g.color, -0.35)}" stroke="${L}"/>
+        ${collar}
+        <path d="M108,${g.cropped ? 134 : 146} L108,${len}" stroke="${L}" fill="none"/>
+        ${buttons([88, 126], g.cropped ? [150, 178] : [160, 196], 3.2, shade(g.color, -0.5), L)}
+        ${g.cropped ? '' : both(m => `<path d="M${X(56, m)},210 L${X(84, m)},210" stroke="${L}" fill="none"/>`)}
+        ${both(m => `<path d="M${X(64, m)},112 L${X(80, m)},112" stroke="${L}" fill="none"/>`)}
+        ${cuffLine(t, L, 16)}`;
+    },
+    waistcoat(g, F) {
+      const L = g.line;
+      const d = sym([[100, 56], [84, 48], [62, 58], ['q', 66, 92, 54, 112], [55, 214], [76, 232], [100, 222]]);
+      return `<path d="M84,48 Q100,58 116,48 L116,60 Q100,70 84,60 Z" fill="${shade(g.color, -0.35)}" stroke="${L}"/>
+        <path d="${d}" fill="${F}" stroke="${L}"/>
+        ${both(m => `<path d="M${X(84, m)},48 L${X(m ? 92 : 108, m)},150" stroke="${L}" fill="none"/>`)}
+        <path d="M108,150 L108,226" stroke="${L}" fill="none"/>
+        ${buttons([90, 126], [162, 186, 208], 2.8, shade(g.color, -0.5), L)}
+        ${both(m => `<path d="M${X(62, m)},196 L${X(82, m)},194" stroke="${L}" fill="none"/>`)}`;
+    },
+    knit(g, F) { // oversized drop-shoulder crew
+      const t = topOutline({ neck: 18, shoulder: 70, drop: 26, capOut: 4, spread: 6, sleeveEnd: 278, cuff: 30, body: 64, armY: 150, hem: 66, hemY: 250, hemDip: 0 });
+      const L = g.line;
+      let ribs = '';
+      for (let x = 38; x <= 162; x += 5) ribs += `<path d="M${x},234 L${x},252" stroke="${L}" opacity=".55"/>`;
+      let cuffRibs = '';
+      both(m => { for (let k = 0; k < 6; k++) { const x0 = t.cuffOut[0] + 3 + k * 4.6; cuffRibs += `<path d="M${X(x0, m)},${t.cuffOut[1] - 16} L${X(x0 + 1, m)},${t.cuffOut[1]}" stroke="${L}" opacity=".55"/>`; } return ''; });
+      return `<path d="${t.d}" fill="${F}" stroke="${L}"/>
+        <path d="M82,48 Q100,66 118,48 Q100,58 82,48 Z" fill="${shade(g.color, -0.35)}"/>
+        <path d="M82,48 Q100,70 118,48" stroke="${L}" fill="none"/><path d="M78,47 Q100,76 122,47" stroke="${L}" fill="none"/>
+        <path d="M34,234 L166,234" stroke="${L}" fill="none"/>${ribs}${cuffRibs}
+        ${both(m => `<path d="M${X(34, m)},76 Q${X(40, m)},120 ${X(36, m)},150" stroke="${L}" fill="none" opacity=".6"/>`)}`;
+    },
+    tank(g, F) {
+      const L = g.line;
+      const d = sym([[100, 92], ['q', 84, 92, 76, 50], [66, 50], ['q', 66, 96, 50, 116], [52, 252], [100, 256]]);
+      return `<path d="${d}" fill="${F}" stroke="${L}"/>
+        <path d="M76,50 Q84,96 100,96 Q116,96 124,50" stroke="${L}" fill="none" opacity=".5"/>
+        <path d="M52,240 L148,244" stroke="${L}" fill="none" opacity=".5"/>`;
+    },
+    shirt(g, F) { // organza shirt with balloon sleeves
+      const t = topOutline({ neck: 14, shoulder: 54, drop: 14, spread: 18, sleeveEnd: 258, cuff: 24, body: 46, armY: 118, hem: 48, hemY: 262, hemCurve: 10, balloon: 26 });
+      const L = g.line;
+      return `<path d="${t.d}" fill="${F}" stroke="${L}"/>
+        <path d="M100,56 L100,268" stroke="${L}" fill="none"/>
+        ${buttons([104], [80, 112, 144, 176, 208, 240], 2.1, '#fff', L)}
+        ${both(m => `<path d="M${X(t.cuffOut[0], m)},${t.cuffOut[1] - 14} L${X(t.cuffIn[0], m)},${t.cuffIn[1] - 14}" stroke="${L}" fill="none"/>`)}
+        ${ruffPath(100, 50, 30, 11, g.c2 || '#fff', L, 26)}`;
+    },
+    trouser(g, F) { // pleated wide trouser on a clip hanger
+      const L = g.line;
+      const wide = g.wide ?? 64;
+      const d = sym([[100, 60], [52, 60], ['q', 46, 110, 48, 170], [100 - wide, 398], [100 - wide + 50, 400], [100, 176]]);
+      let pleats = '';
+      both(m => { pleats += `<path d="M${X(80, m)},74 L${X(74, m)},180" stroke="${L}" fill="none"/><path d="M${X(70, m)},74 L${X(62, m)},140" stroke="${L}" fill="none" opacity=".7"/>`; return ''; });
+      return `<path d="${d}" fill="${F}" stroke="${L}"/>
+        <rect x="52" y="60" width="96" height="14" fill="${F}" stroke="${L}"/>
+        <path d="M100,74 L100,130" stroke="${L}" fill="none"/>
+        ${pleats}
+        ${both(m => `<path d="M${X(58, m)},76 Q${X(64, m)},92 ${X(54, m)},104" stroke="${L}" fill="none"/>`)}
+        ${both(m => `<path d="M${X(100 - wide + 25, m)},180 L${X(100 - wide + 25, m)},398" stroke="${L}" opacity=".35" fill="none"/>`)}`;
+    },
+    culotte(g, F) { // stitched-pleat culottes that read as a skirt
+      const L = g.line;
+      const d = sym([[100, 60], [56, 60], ['q', 46, 130, 30, 300], [100, 304]]);
+      let pleats = '';
+      for (let k = -3; k <= 3; k++) {
+        const x0 = 100 + k * 12, x1 = 100 + k * 22;
+        pleats += `<path d="M${x0},74 L${x0},130" stroke="${L}" stroke-dasharray="2.4 2" fill="none"/><path d="M${x0},130 L${x1},302" stroke="${L}" fill="none" opacity=".75"/>`;
+      }
+      return `<path d="${d}" fill="${F}" stroke="${L}"/>
+        <rect x="56" y="60" width="88" height="14" fill="${F}" stroke="${L}"/>${pleats}
+        <path d="M30,300 Q100,314 170,300" stroke="${L}" fill="none" opacity=".5"/>`;
+    },
+    corset(g, F) {
+      const L = g.line;
+      const d = sym([[100, 104], ['q', 92, 84, 78, 82], ['q', 62, 82, 56, 96], ['q', 66, 160, 62, 220], [100, 252]]);
+      let bones = '';
+      for (const x of [66, 78, 90, 110, 122, 134]) bones += `<path d="M${x},${86 + Math.abs(100 - x) * 0.08} Q${x + (x < 100 ? 3 : -3)},170 ${x + (x < 100 ? 5 : -5)},${236 - Math.abs(100 - x) * 0.55}" stroke="${g.c2}" stroke-width="2.2" fill="none"/>`;
+      return `${both(m => `<path d="M${X(70, m)},40 L${X(72, m)},84" stroke="${L}" stroke-width="1.4" fill="none"/>`)}
+        <path d="${d}" fill="${F}" stroke="${L}"/>${bones}
+        <path d="M100,104 L100,252" stroke="${L}" fill="none"/>`;
+    },
+    pinafore(g, F) { // satin pinafore dress with straps and a full skirt
+      const L = g.line;
+      const d = sym([[100, 112], [72, 112], [70, 200], ['q', 40, 300, 22, 392], ['q', 60, 404, 100, 402]]);
+      let folds = '';
+      for (const [a, b] of [[80, 54], [90, 76], [110, 124], [120, 146]]) folds += `<path d="M${a},214 Q${(a + b) / 2},300 ${b},398" stroke="${L}" fill="none" opacity=".45"/>`;
+      return `${both(m => `<path d="M${X(66, m)},42 L${X(74, m)},112" stroke="${L}" stroke-width="5" stroke-linecap="round" fill="none"/>`)}
+        <path d="${d}" fill="${F}" stroke="${L}"/>
+        <path d="M70,200 Q100,208 130,200" stroke="${L}" fill="none"/>${folds}
+        <path d="M84,140 L116,140" stroke="${L}" fill="none" opacity=".4"/>`;
+    },
+    ruff(g, F) {
+      return ruffPath(100, 120, 72, 22, F, g.line, 34) +
+        `<circle cx="100" cy="120" r="44" fill="none" stroke="${g.line}" stroke-dasharray="3 3" opacity=".5"/>
+         <path d="M100,4 L100,50" stroke="${g.line}" stroke-width="1.6" fill="none"/>`;
+    },
+  };
+
+  // A pleated ruff: a scalloped ring drawn as a ring of overlapping arcs.
+  function ruffPath(cx, cy, r, depth, fill, line, n) {
+    let outer = '';
+    for (let i = 0; i < n; i++) {
+      const a0 = (i / n) * Math.PI * 2, a1 = ((i + 1) / n) * Math.PI * 2, am = (a0 + a1) / 2;
+      const p0 = [cx + Math.cos(a0) * r, cy + Math.sin(a0) * r * 0.62];
+      const p1 = [cx + Math.cos(a1) * r, cy + Math.sin(a1) * r * 0.62];
+      const c = [cx + Math.cos(am) * (r + depth * 0.5), cy + Math.sin(am) * (r + depth * 0.5) * 0.62];
+      outer += (i === 0 ? `M${p0[0].toFixed(1)},${p0[1].toFixed(1)}` : '') + ` Q${c[0].toFixed(1)},${c[1].toFixed(1)} ${p1[0].toFixed(1)},${p1[1].toFixed(1)}`;
+    }
+    let folds = '';
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2;
+      folds += `M${(cx + Math.cos(a) * (r - depth)).toFixed(1)},${(cy + Math.sin(a) * (r - depth) * 0.62).toFixed(1)} L${(cx + Math.cos(a) * r).toFixed(1)},${(cy + Math.sin(a) * r * 0.62).toFixed(1)} `;
+    }
+    const inner = `M${cx - (r - depth)},${cy} a${r - depth},${(r - depth) * 0.62} 0 1,0 ${2 * (r - depth)},0 a${r - depth},${(r - depth) * 0.62} 0 1,0 ${-2 * (r - depth)},0`;
+    return `<path d="${outer} Z ${inner}" fill="${fill}" fill-rule="evenodd" stroke="${line}"/>
+      <path d="${folds}" stroke="${line}" opacity=".55" fill="none"/>`;
+  }
+
+  // --- hangers ---------------------------------------------------------------
+  const HANGERS = {
+    // dry-cleaner wire hanger with a paper shoulder guard
+    wire(kind) {
+      const hook = `<path d="M100,52 L100,30 Q100,8 88,8 Q78,8 78,18" fill="none" stroke="var(--hanger-wire, #9aa3ab)" stroke-width="2.4" stroke-linecap="round"/>`;
+      if (kind === 'bottom') return hook + `<path d="M40,60 L160,60" stroke="var(--hanger-wire, #9aa3ab)" stroke-width="2.4"/>
+        <path d="M40,60 L40,70 M160,60 L160,70" stroke="var(--hanger-wire, #9aa3ab)" stroke-width="2.4"/>`;
+      return hook + `<path d="M100,46 L34,72 L166,72 Z" fill="none" stroke="var(--hanger-wire, #9aa3ab)" stroke-width="2.4" stroke-linejoin="round"/>`;
+    },
+    guard() { // printed paper shoulder guard (front layer)
+      return `<path d="M100,44 L30,70 L36,82 L100,58 L164,82 L170,70 Z" fill="var(--guard-paper, #f4f1ea)" stroke="var(--guard-edge, #c9c2b6)" stroke-width=".8"/>
+        <text x="66" y="70" transform="rotate(-20 66 70)" font-size="7.5" font-weight="700" letter-spacing="1.5" fill="var(--guard-ink, #1b1f2a)" font-family="var(--font-sign, sans-serif)">KEKA</text>
+        <text x="122" y="56" transform="rotate(20 122 56)" font-size="6" letter-spacing="1" fill="var(--guard-ink, #1b1f2a)" font-family="var(--font-sign, sans-serif)">IN CARE</text>`;
+    },
+    wood(kind) {
+      const hook = `<path d="M100,46 L100,28 Q100,8 86,8 Q76,8 76,18" fill="none" stroke="var(--hanger-hook, #b08d57)" stroke-width="2.6" stroke-linecap="round"/>`;
+      if (kind === 'bottom') return hook + `<rect x="36" y="46" width="128" height="9" rx="3" fill="var(--hanger-wood, #7a5536)"/>
+        <rect x="44" y="52" width="10" height="16" rx="2" fill="var(--hanger-hook, #b08d57)"/><rect x="146" y="52" width="10" height="16" rx="2" fill="var(--hanger-hook, #b08d57)"/>`;
+      return hook + `<path d="M100,44 Q60,50 26,70 Q24,76 30,76 Q64,60 100,56 Q136,60 170,76 Q176,76 174,70 Q140,50 100,44 Z" fill="var(--hanger-wood, #7a5536)"/>`;
+    },
+    // fine black wire, for the monochrome storefront
+    thin(kind) {
+      const hook = `<path d="M100,50 L100,30 Q100,9 87,9 Q77,9 77,19" fill="none" stroke="var(--hanger, #0a0a0a)" stroke-width="2" stroke-linecap="round"/>`;
+      if (kind === 'bottom') return hook + `<path d="M40,52 L160,52" stroke="var(--hanger, #0a0a0a)" stroke-width="2.4" stroke-linecap="round"/>
+        <path d="M46,52 L46,66 M154,52 L154,66" stroke="var(--hanger, #0a0a0a)" stroke-width="2.4"/>`;
+      return hook + `<path d="M100,48 L30,72 L170,72 Z" fill="none" stroke="var(--hanger, #0a0a0a)" stroke-width="2" stroke-linejoin="round"/>`;
+    },
+    black(kind) {
+      const hook = `<path d="M100,46 L100,28 Q100,8 86,8 Q76,8 76,18" fill="none" stroke="var(--hanger-hook, #1a1a1a)" stroke-width="2.6" stroke-linecap="round"/>`;
+      if (kind === 'bottom') return hook + `<rect x="38" y="46" width="124" height="8" rx="2" fill="var(--hanger-body, #121212)"/>
+        <rect x="46" y="52" width="9" height="15" fill="var(--hanger-body, #121212)"/><rect x="145" y="52" width="9" height="15" fill="var(--hanger-body, #121212)"/>`;
+      return hook + `<path d="M100,44 L28,70 L30,76 L100,54 L170,76 L172,70 Z" fill="var(--hanger-body, #121212)"/>`;
+    },
+  };
+
+  const BOTTOM = new Set(['trouser', 'culotte']);
+
+  let uid = 0;
+  function svg(g, opts = {}) {
+    const id = `kp${uid++}`;
+    const defs = patternDefs(id, g);
+    const F = defs ? `url(#${id})` : g.color;
+    const style = opts.hanger || 'wood';
+    const kind = BOTTOM.has(g.type) ? 'bottom' : 'top';
+    const body = DRAW[g.type](g, F);
+    const sheer = g.sheer ? ` fill-opacity="${g.sheer}"` : '';
+    const back = g.type === 'ruff' ? '' : HANGERS[style](kind);
+    const front = style === 'wire' && kind === 'top' && g.type !== 'ruff' && !opts.noGuard ? HANGERS.guard() : '';
+    return `<svg viewBox="0 0 ${W} 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${g.name}" class="flat">
+      <defs>${defs}</defs>${back}
+      <g stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"${sheer}>${body}</g>${front}</svg>`;
+  }
+
+  // --- catalogue -------------------------------------------------------------
+  // Sample catalogue drawn from runway looks. Names describe the piece; prices are samples.
+  const CATALOG = [
+    { id: 'belted-trench', ticket: 101, name: 'Belted Trench', type: 'trench', cat: 'Outerwear', collection: 'TRACE', color: '#4b2834', line: '#26121a', hardware: '#1c0d12', fabric: 'Wool gabardine', price: 890, look: 'photo-209' },
+    { id: 'organza-trench', ticket: 102, name: 'Organza Trench', type: 'trench', cat: 'Outerwear', collection: 'TRACE', color: '#f1ece0', line: '#a89f8c', hardware: '#b38a3c', sheer: 0.62, fabric: 'Matte organza', price: 760, look: 'photo-229' },
+    { id: 'tartan-jacket', ticket: 103, name: 'Tartan Double-Breasted Jacket', type: 'jacket', cat: 'Tailoring', collection: 'TRACE', color: '#1f3a33', c2: '#0f1d33', c3: '#6d7f56', line: '#0b1512', pattern: 'tartan', fabric: 'Wool tartan', price: 640, look: 'photo-226' },
+    { id: 'pinstripe-trouser', ticket: 104, name: 'Pinstripe Pleated Trouser', type: 'trouser', cat: 'Trousers', collection: 'TRACE', color: '#1c2638', c2: '#9aa6bf', line: '#0c121d', pattern: 'pinstripe', wide: 66, fabric: 'Wool', price: 380, look: 'photo-214' },
+    { id: 'cropped-jacket', ticket: 105, name: 'Cropped Jacket', type: 'jacket', cropped: true, cat: 'Tailoring', collection: 'TRACE', color: '#7a1f2e', line: '#3b0c15', fabric: 'Wool', price: 560, look: 'photo-224' },
+    { id: 'tudor-corset', ticket: 106, name: 'Tudor Corset', type: 'corset', cat: 'Tops', collection: 'Tudor', color: '#efe7d6', c2: '#5c5148', c3: '#b9ad97', line: '#7b705f', pattern: 'corset', fabric: 'Cotton', price: 420, look: 'DSC02726' },
+    { id: 'db-coat', ticket: 107, name: 'Double-Breasted Coat', type: 'coat', cat: 'Outerwear', collection: 'TRACE', color: '#4a3326', line: '#21150e', fabric: 'Wool', price: 980, look: 'photo-225' },
+    { id: 'oversized-knit', ticket: 108, name: 'Oversized Knit', type: 'knit', cat: 'Knitwear', collection: 'TRACE', color: '#173e52', line: '#0a2130', fabric: 'Wool knit', price: 340, look: 'photo-210' },
+    { id: 'organza-ruff', ticket: 109, name: 'Organza Ruff', type: 'ruff', cat: 'Accessories', collection: 'Tudor', color: '#fbfaf6', line: '#a8b3bd', fabric: 'Organza', price: 180, look: 'DSC02600' },
+    { id: 'check-waistcoat', ticket: 110, name: 'Check Waistcoat', type: 'waistcoat', cat: 'Tailoring', collection: 'TRACE', color: '#8f949a', c2: '#3c4148', line: '#3b3f45', pattern: 'check', fabric: 'Wool check', price: 290, look: 'photo-220' },
+    { id: 'sequin-tank', ticket: 111, name: 'Sequin Tank', type: 'tank', cat: 'Tops', collection: 'TRACE', color: '#3a2618', c2: '#7d5a3a', line: '#1d120a', pattern: 'sequin', fabric: 'Sequin knit', price: 310, look: 'photo-214' },
+    { id: 'balloon-shirt', ticket: 112, name: 'Balloon-Sleeve Shirt', type: 'shirt', cat: 'Tops', collection: 'Tudor', color: '#f6f3ee', c2: '#c8302c', line: '#9d978c', sheer: 0.78, fabric: 'Cotton organza', price: 360, look: 'DSC02596' },
+    { id: 'pleat-culotte', ticket: 113, name: 'Stitched-Pleat Culotte', type: 'culotte', cat: 'Trousers', collection: 'TRACE', color: '#16181d', line: '#000000', fabric: 'Wool', price: 340, look: 'photo-222' },
+    { id: 'satin-pinafore', ticket: 114, name: 'Satin Pinafore Dress', type: 'pinafore', cat: 'Dresses', collection: 'Tudor', color: '#2c2a2b', line: '#0e0d0e', fabric: 'Satin', price: 520, look: 'DSC02744' },
+  ];
+  // lines for very dark pieces must stay visible on dark fills
+  for (const g of CATALOG) if (!g.line) g.line = shade(g.color, -0.5);
+
+  // A hanger on its own, for hanging a garment photograph beneath it (viewBox 200 x 90).
+  function hangerSvg(style, g) {
+    const kind = BOTTOM.has(g.type) ? 'bottom' : 'top';
+    const front = style === 'wire' && kind === 'top' ? HANGERS.guard() : '';
+    return `<svg class="hanger" viewBox="0 0 ${W} 90" aria-hidden="true">${HANGERS[style](kind)}${front}</svg>`;
+  }
+
+  window.KEKA = { CATALOG, svg, hangerSvg, shade };
+})();
+</script>
+<script>/* KEKA, The Rail.
+   One rail carries everything: the runway film is hung on it first, collection dividers
+   and garments follow, the brand's hang-tag closes it. Vertical scroll moves the rail. */
+(() => {
+  const { CATALOG, hangerSvg } = window.KEKA;
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const money = n => '$' + n.toLocaleString('en-US');
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const byId = id => CATALOG.find(g => g.id === id);
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const ease = t => (t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+  const SIZES = ['XS', 'S', 'M', 'L', 'XL'];
+  const SHOWS = {
+    TRACE: { title: 'TRACE', where: 'London Fashion Day, Season 7', when: '1 May 2026', text: 'Form, clarity of line and the quiet presence of memory. The trench coat is the key piece, from structured wool to matte organza.' },
+    Tudor: { title: 'Tudor', where: 'London Fashion Day, Season 5', when: 'April 2025', text: 'Tudor tailoring in contemporary silhouettes. Wool, cotton and organza, with collars made for KEKA by Mason Sophy G.' },
+  };
+
+  // ------------------------------------------------------------ the look (bag)
+  const Look = {
+    key: 'keka-look', items: [], subs: new Set(),
+    load() { try { this.items = JSON.parse(localStorage.getItem(this.key) || '[]').filter(i => byId(i.id)); } catch (e) { this.items = []; } },
+    save() { try { localStorage.setItem(this.key, JSON.stringify(this.items)); } catch (e) { /* storage unavailable */ } this.subs.forEach(f => f()); },
+    add(id, size) { this.items.push({ id, size }); this.save(); },
+    remove(i) { this.items.splice(i, 1); this.save(); },
+    has(id) { return this.items.some(i => i.id === id); },
+    total() { return this.items.reduce((s, i) => s + byId(i.id).price, 0); },
+  };
+  Look.load();
+  const paintLook = () => {
+    $$('.js-n').forEach(n => (n.textContent = Look.items.length));
+    const bar = $('.lookbar');
+    bar.hidden = !Look.items.length;
+    $('.lookbar-thumbs', bar).innerHTML = Look.items.slice(-4).map(i => `<img src="media/rail/${i.id}.jpg" alt="" width="450" height="750">`).join('');
+    $('.lookbar-sum', bar).textContent = `${Look.items.length} ${Look.items.length === 1 ? 'piece' : 'pieces'} · ${money(Look.total())}`;
+  };
+  Look.subs.add(paintLook);
+
+  // ------------------------------------------------------------ the rail's contents
+  const ENTRIES = [{ kind: 'film' }];
+  for (const coll of ['TRACE', 'Tudor']) {
+    ENTRIES.push({ kind: 'divider', coll });
+    CATALOG.filter(g => g.collection === coll).forEach(g => ENTRIES.push({ kind: 'piece', g }));
+  }
+  ENTRIES.push({ kind: 'tag' }, { kind: 'end' });
+
+  const stageWrap = $('.stage-wrap'), stage = $('.stage'), track = $('.track'), film = $('.film');
+  const readout = $('.readout');
+  const items = ENTRIES.map((e, i) => {
+    const li = document.createElement('li');
+    li.className = 'item item-' + e.kind;
+    li.dataset.i = i;
+    let inner = '';
+    if (e.kind === 'film') inner = `<div class="swing"><span class="hanger-wrap">${hangerSvg('thin', { type: 'coat' })}</span><span class="film-slot" aria-hidden="true"></span></div>`;
+    if (e.kind === 'piece') inner = `<div class="swing"><button type="button" class="hang" aria-label="${esc(e.g.name)}, ${money(e.g.price)} sample price. Open the fitting room.">${hangerSvg('thin', e.g)}<img src="media/rail/${e.g.id}.jpg" alt="" width="450" height="750" draggable="false"></button></div>`;
+    if (e.kind === 'divider') inner = `<div class="swing"><button type="button" class="disc" aria-label="${SHOWS[e.coll].title} collection"><span class="disc-hole"></span><b>${SHOWS[e.coll].title}</b><span>${SHOWS[e.coll].when}</span></button></div>`;
+    if (e.kind === 'tag') inner = `<div class="swing"><div class="hangtag"><span class="tag-hole"></span><p class="tag-big">Clothing, as a language.</p><p>Precise construction meets softer silhouettes. Clear lines sit beside a more instinctive approach to dressing, between masculine and feminine codes, history and the present.</p><p class="tag-sign">KEKA</p></div></div>`;
+    if (e.kind === 'end') inner = `<div class="swing"><div class="endcard"><p>That is the whole rail.</p><button type="button" class="btn js-open-look">See your look</button><button type="button" class="btn btn-ghost js-open-index">Open the index</button></div></div>`;
+    li.innerHTML = inner;
+    track.appendChild(li);
+    return { e, el: li, sw: li.firstElementChild, th: (Math.random() - .5) * 2, om: 0, x: 0, w: 0 };
+  });
+
+  // ------------------------------------------------------------ layout
+  let V = 0, H = 0, W = 0, GAP = 0, L = 0, T = 0, I = 0, top0 = 0, railY = 0, pinned = !RM;
+  function layout() {
+    V = stage.clientWidth; H = stage.clientHeight;
+    const cs = getComputedStyle(stage);
+    W = parseFloat(cs.getPropertyValue('--w')); GAP = parseFloat(cs.getPropertyValue('--gap'));
+    railY = parseFloat(cs.getPropertyValue('--rail-y')) * H / 100;
+    const lead = Math.max(16, Math.min(40, V * 0.026)); // mirrors --gutter: clamp(16px, 2.6vw, 40px)
+    let x = lead;
+    items.forEach(it => {
+      it.w = it.e.kind === 'piece' || it.e.kind === 'film' ? W : it.e.kind === 'divider' ? W * .82 : it.e.kind === 'tag' ? Math.min(W * 1.7, V * .82) : W * 1.25;
+      it.x = x; x += it.w + GAP;
+      it.el.style.width = it.w + 'px';
+      it.el.style.left = it.x + 'px';
+    });
+    L = x - GAP + lead;
+    T = Math.max(0, L - V);
+    I = pinned ? H * .9 : 0;
+    stageWrap.style.height = pinned ? (I + T + H) + 'px' : '';
+    track.style.top = railY + 'px';
+    top0 = stageWrap.getBoundingClientRect().top + scrollY;
+    tick(true);
+  }
+
+  // ------------------------------------------------------------ frame loop
+  let raf = 0, xPrev = 0, vPrev = 0, last = 0, active = -1, inView = true;
+  function frame() { raf = 0; tick(false); }
+  function kick() { if (!raf) raf = requestAnimationFrame(frame); }
+  function tick(force) {
+    const now = performance.now(), dt = clamp((now - (last || now)) / 1000, .008, .05); last = now;
+    const s = pinned ? scrollY - top0 : 0;
+    const p = pinned ? clamp(s / I, 0, 1) : 1;
+    const x = pinned ? clamp(s - I, 0, T) : track.parentElement.scrollLeft || 0;
+    if (pinned) track.style.transform = `translate3d(${(-x).toFixed(1)}px,0,0)`;
+    // the film: full screen at the top, hung on the rail once the visitor scrolls
+    const f = items[0], ep = ease(p);
+    const slotX = f.x - x, slotY = railY + W * .29, slotW = W, slotH = W * 5 / 3;
+    if (pinned) {
+      const fx = slotX * ep, fy = slotY * ep, fw = V + (slotW - V) * ep, fh = H + (slotH - H) * ep;
+      film.style.transform = `translate3d(${fx.toFixed(1)}px,${fy.toFixed(1)}px,0) rotate(${(f.th * ep).toFixed(2)}deg)`;
+      film.style.width = fw.toFixed(1) + 'px'; film.style.height = fh.toFixed(1) + 'px';
+      stage.style.setProperty('--p', p.toFixed(3));
+      stage.classList.toggle('is-hung', p > .98);
+    }
+    // swing from the rail's acceleration
+    const v = (x - xPrev) / dt; const a = (v - vPrev) / dt; xPrev = x; vPrev = v;
+    let busy = false;
+    for (const it of items) {
+      const acc = RM ? 0 : clamp(a, -40000, 40000) * .0011;
+      it.om += (-24 * it.th - 1.1 * it.om - acc) * dt; it.th = clamp(it.th + it.om * dt, -12, 12);
+      if (RM) { it.th = 0; it.om = 0; }
+      if (Math.abs(it.th) > .03 || Math.abs(it.om) > .05) busy = true;
+      it.sw.style.transform = `rotate(${it.th.toFixed(2)}deg)`;
+    }
+    // the readout follows whatever hangs at the centre line
+    const c = x + V / 2;
+    let best = 0, bd = Infinity;
+    items.forEach((it, i) => { const d = Math.abs(it.x + it.w / 2 - c); if (d < bd) { bd = d; best = i; } });
+    if (p < .6) best = -1;
+    if (best !== active || force) { active = best; paintReadout(); }
+    $('.pos i').style.transform = `scaleX(${(T ? x / T : 0).toFixed(4)})`;
+    if (busy && inView) kick();
+  }
+  addEventListener('scroll', () => { if (inView) kick(); }, { passive: true });
+  new IntersectionObserver(([e]) => { inView = e.isIntersecting; if (inView) kick(); }).observe(stageWrap);
+  addEventListener('resize', () => { clearTimeout(layout.t); layout.t = setTimeout(layout, 80); });
+  if (!RM) track.parentElement.addEventListener('pointermove', e => {
+    if (e.pointerType !== 'mouse') return;
+    const r = stage.getBoundingClientRect(), x = pinned ? clamp(scrollY - top0 - I, 0, T) : 0;
+    for (const it of items) { const cx = r.left + it.x - x + it.w / 2; if (Math.abs(e.clientX - cx) < it.w * .4) { it.om += (e.movementX || 0) * .9; kick(); } }
+  });
+
+  function paintReadout() {
+    const it = items[active];
+    readout.classList.toggle('is-empty', !it);
+    if (!it) return;
+    const e = it.e;
+    const name = $('.ro-name', readout), meta = $('.ro-meta', readout), act = $('.ro-actions', readout);
+    if (e.kind === 'piece') {
+      name.textContent = e.g.name;
+      meta.innerHTML = `<span>${money(e.g.price)} <em>sample</em></span><span>${e.g.fabric}</span><span>${e.g.collection}</span>`;
+      act.innerHTML = `<button type="button" class="btn" data-fit="${e.g.id}">Fitting room</button><button type="button" class="btn btn-ghost" data-quick="${e.g.id}">${Look.has(e.g.id) ? 'In your look' : 'Add to look'}</button>`;
+    } else if (e.kind === 'divider') {
+      const s = SHOWS[e.coll];
+      name.textContent = s.title;
+      meta.innerHTML = `<span>${s.where}</span><span>${s.when}</span>`;
+      act.innerHTML = `<p class="ro-text">${s.text}</p>`;
+    } else if (e.kind === 'film') {
+      name.textContent = 'KEKA';
+      meta.innerHTML = '<span>Runway film, TRACE and Tudor</span>';
+      act.innerHTML = '';
+    } else if (e.kind === 'tag') {
+      name.textContent = 'Be like KEKA';
+      meta.innerHTML = '<span>Fashion as identity. Form as freedom.</span>';
+      act.innerHTML = '';
+    } else {
+      name.textContent = 'Your look';
+      meta.innerHTML = `<span>${Look.items.length} ${Look.items.length === 1 ? 'piece' : 'pieces'}</span>`;
+      act.innerHTML = '';
+    }
+    readout.classList.remove('flip'); void readout.offsetWidth; readout.classList.add('flip');
+  }
+  readout.addEventListener('click', e => {
+    const f = e.target.closest('[data-fit]'), q = e.target.closest('[data-quick]');
+    if (f) openFit(byId(f.dataset.fit));
+    if (q) { const g = byId(q.dataset.quick); if (!Look.has(g.id)) openFit(g, true); else openLook(); }
+  });
+  Look.subs.add(() => paintReadout());
+
+  // jump the page so an item sits on the centre line
+  function scrollToItem(i) {
+    const it = items[i]; if (!it) return;
+    if (!pinned) { track.parentElement.scrollTo({ left: it.x - V / 2 + it.w / 2, behavior: RM ? 'auto' : 'smooth' }); return; }
+    const x = clamp(it.x + it.w / 2 - V / 2, 0, T);
+    scrollTo({ top: top0 + I + x, behavior: RM ? 'auto' : 'smooth' });
+  }
+  track.addEventListener('click', e => {
+    const li = e.target.closest('[data-i]'); if (!li) return;
+    const it = items[+li.dataset.i];
+    if (e.target.closest('.hang')) openFit(it.e.g);
+    else if (e.target.closest('.disc')) scrollToItem(+li.dataset.i + 1);
+  });
+  track.addEventListener('focusin', e => { const li = e.target.closest('[data-i]'); if (li && e.target.matches(':focus-visible')) scrollToItem(+li.dataset.i); });
+  $$('.jump').forEach(b => b.addEventListener('click', () => {
+    const want = b.dataset.jump;
+    const i = items.findIndex(it => (want === 'tag' ? it.e.kind === 'tag' : it.e.kind === 'divider' && it.e.coll === want));
+    scrollToItem(i);
+  }));
+  $('.enter').addEventListener('click', () => scrollToItem(1));
+
+  // ------------------------------------------------------------ dialogs
+  function Dlg(el) {
+    let opener = null;
+    const close = () => {
+      if (!el.open) return;
+      el.classList.add('is-closing');
+      setTimeout(() => { el.classList.remove('is-closing'); el.close(); opener && opener.focus && opener.focus({ preventScroll: true }); }, RM ? 0 : 300);
+    };
+    el.addEventListener('cancel', e => { e.preventDefault(); close(); });
+    el.addEventListener('click', e => { if (e.target === el || e.target.closest('[data-close]')) close(); });
+    return { el, body: $('.dlg-body', el), close, open(html) { opener = document.activeElement; if (html != null) this.body.innerHTML = html; if (!el.open) el.showModal(); this.body.scrollTop = 0; ($('[data-autofocus]', el) || $('.dlg-close', el)).focus({ preventScroll: true }); } };
+  }
+  const fit = Dlg($('#fit')), look = Dlg($('#look')), index = Dlg($('#index'));
+
+  function openFit(g, focusSizes) {
+    const sizes = g.cat === 'Accessories' ? ['One size'] : SIZES;
+    const pair = CATALOG.filter(x => x.collection === g.collection && x.id !== g.id && x.cat !== g.cat).slice(0, 3);
+    fit.open(`
+      <div class="fit">
+        <figure class="fit-photo"><img src="media/photos/${g.look}.jpg" alt="Runway look with the ${esc(g.name)}" width="800" height="1200"></figure>
+        <div class="fit-info">
+          <h2 id="fit-title">${esc(g.name)}</h2>
+          <p class="fit-price">${money(g.price)} <em>sample price</em></p>
+          <form class="fit-form" novalidate>
+            <fieldset><legend>Size</legend><div class="sizes">${sizes.map((s, i) => `<label class="size"><input type="radio" name="size" value="${s}" id="fs-${i}" ${sizes.length === 1 ? 'checked' : ''}><span>${s}</span></label>`).join('')}</div></fieldset>
+            <p class="fit-error" role="alert" hidden>Choose a size first.</p>
+            <button type="submit" class="btn btn-wide" ${focusSizes ? '' : 'data-autofocus'}>Add to your look</button>
+            <p class="fit-status" role="status"></p>
+          </form>
+          <dl class="fit-facts"><div><dt>Fabric</dt><dd>${g.fabric}</dd></div><div><dt>Shown</dt><dd>${SHOWS[g.collection].title}, ${SHOWS[g.collection].where}, ${SHOWS[g.collection].when}</dd></div><div><dt>Fit</dt><dd>Cut without a gender. Take your usual size.</dd></div></dl>
+          ${pair.length ? `<p class="fit-with">Wear it with</p><ul class="pairs">${pair.map(x => `<li><button type="button" class="pair" data-pair="${x.id}"><img src="media/rail/${x.id}.jpg" alt="" width="450" height="750"><span>${esc(x.name)}</span><span>${money(x.price)}</span></button></li>`).join('')}</ul>` : ''}
+        </div>
+      </div>`);
+    const form = $('.fit-form', fit.body);
+    if (focusSizes) $('input[name=size]', form).focus({ preventScroll: true });
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const s = $('input[name=size]:checked', form);
+      if (!s) { $('.fit-error', form).hidden = false; $('input[name=size]', form).focus(); return; }
+      $('.fit-error', form).hidden = true;
+      Look.add(g.id, s.value);
+      $('.fit-status', form).innerHTML = `Added, size ${s.value}. <button type="button" class="link js-open-look">See your look</button>`;
+    });
+    form.addEventListener('change', () => { $('.fit-error', form).hidden = true; });
+  }
+  $('#fit').addEventListener('click', e => { const p = e.target.closest('[data-pair]'); if (p) openFit(byId(p.dataset.pair)); });
+
+  function openLook() {
+    const list = Look.items.map((it, i) => { const g = byId(it.id); return `<li><img src="media/rail/${g.id}.jpg" alt="${esc(g.name)}" width="450" height="750"><b>${esc(g.name)}</b><span>Size ${it.size} · ${money(g.price)}</span><button type="button" class="link" data-remove="${i}">Remove</button></li>`; }).join('');
+    look.open(`<h2 class="look-title" id="look-title">Your look</h2>
+      ${Look.items.length ? `<ul class="look-row">${list}</ul><div class="look-total"><span>Total, sample prices</span><b>${money(Look.total())}</b></div>` : '<p class="look-empty">Nothing yet. Open a piece on the rail and add it to your look.</p>'}
+      <form class="notify" novalidate><p>The KEKA store opens soon. Leave your email and we will write when your look can be ordered.</p>
+        <label for="n-email">Email address</label><div class="row"><input id="n-email" type="email" required autocomplete="email" placeholder="name@example.com"><button type="submit" class="btn">Notify me</button></div>
+        <p class="notify-status" role="status"></p></form>`);
+  }
+  $('#look').addEventListener('click', e => { const r = e.target.closest('[data-remove]'); if (r) { Look.remove(+r.dataset.remove); openLook(); } });
+  $('#look').addEventListener('submit', e => {
+    e.preventDefault();
+    const em = $('input[type=email]', e.target), out = $('.notify-status', e.target);
+    if (!em.checkValidity()) { out.textContent = 'Enter an email address like name@example.com.'; out.dataset.state = 'error'; em.focus(); return; }
+    out.textContent = 'Thank you. This prototype sends nothing; the live store will write to you.'; out.dataset.state = 'ok';
+  });
+
+  function openIndex() {
+    const groups = ['TRACE', 'Tudor'].map(c => `<section><h3>${SHOWS[c].title}<span>${SHOWS[c].where}, ${SHOWS[c].when}</span></h3><ul>${CATALOG.filter(g => g.collection === c).map(g => `<li><button type="button" data-ix="${g.id}"><img src="media/rail/${g.id}.jpg" alt="" width="450" height="750" loading="lazy"><span class="ix-name">${esc(g.name)}</span><span class="ix-cat">${g.cat}</span><span class="ix-price">${money(g.price)}</span></button></li>`).join('')}</ul></section>`).join('');
+    index.open(`<h2 class="ix-title" id="ix-title">Index</h2>${groups}<p class="ix-note">Prices are samples. The online store opens soon.</p>`);
+  }
+  $('#index').addEventListener('click', e => { const b = e.target.closest('[data-ix]'); if (b) { index.close(); setTimeout(() => openFit(byId(b.dataset.ix)), RM ? 0 : 320); } });
+
+  document.addEventListener('click', e => {
+    if (e.target.closest('.js-open-look')) { if (fit.el.open) fit.close(); setTimeout(openLook, fit.el.open && !RM ? 320 : 0); }
+    if (e.target.closest('.js-open-index')) openIndex();
+  });
+
+  // ------------------------------------------------------------ film playback
+  (function filmPlay() {
+    const v = $('video', film), btn = $('.film-btn');
+    let want = !RM, cur = '';
+    const pick = () => { const k = innerHeight > innerWidth * 1.05 ? 'mobile' : 'desktop'; if (k !== cur) { cur = k; v.poster = `media/lineup-${k}.jpg`; v.src = `media/lineup-${k}.mp4`; } sync(); };
+    const sync = () => { if (want) { const pr = v.play(); pr && pr.catch(() => {}); } else v.pause(); btn.setAttribute('aria-pressed', String(!want)); $('.vh', btn).textContent = want ? 'Pause film' : 'Play film'; };
+    btn.addEventListener('click', () => { want = !want; sync(); });
+    addEventListener('resize', pick); pick();
+  })();
+
+  // ------------------------------------------------------------ coda newsletter
+  $('.coda form').addEventListener('submit', e => {
+    e.preventDefault();
+    const em = $('input[type=email]', e.target), out = $('.coda-status', e.target);
+    if (!em.checkValidity()) { out.textContent = 'Enter an email address like name@example.com.'; out.dataset.state = 'error'; em.focus(); return; }
+    out.textContent = 'Thank you. This prototype sends nothing; the live site will add you to the list.'; out.dataset.state = 'ok';
+  });
+
+  if (!pinned) document.documentElement.classList.add('rm');
+  paintLook();
+  layout();
+  addEventListener('load', layout);
+})();
+</script>
+</body>
+</html>
